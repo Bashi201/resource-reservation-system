@@ -1,8 +1,7 @@
 # PrimeWave Lab - Resource Reservation Management System
 
-> **Software Engineering Internship - Technical Assessment**  
-> **Candidate Submission for:** PrimeWave Lab (Pvt) Ltd  
-> **Stack:** Next.js (App Router), TypeScript, PostgreSQL, Prisma ORM, Tailwind CSS
+> **PrimeWave Lab (Pvt) Ltd** • Centralized shared facility and resource allocation platform.  
+> **Tech Stack:** Next.js (App Router), TypeScript, PostgreSQL, Prisma ORM, Tailwind CSS
 
 ---
 
@@ -94,7 +93,7 @@ $$\text{Conflict} = (S_{\text{new}} < E_{\text{exist}}) \land (E_{\text{new}} > 
 8. **Self-Exclusion on Edit**: When updating an existing reservation, its own ID is excluded from the collision query.
 
 ### Race Condition Mitigation
-All booking creations run inside a database transaction (`prisma.$transaction`). Inside this transaction:
+All booking creations run inside an atomic database transaction (`prisma.$transaction`). Inside this transaction:
 1. The resource status is verified (`status === 'AVAILABLE'`).
 2. An atomic conflict check is executed.
 3. The reservation is committed only if zero conflicts exist.
@@ -112,8 +111,8 @@ All booking creations run inside a database transaction (`prisma.$transaction`).
 
 #### 1. Clone the Repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/software_engineering_internship-technical_assessment.git
-cd software_engineering_internship-technical_assessment
+git clone https://github.com/Bashi201/primewave-resource-reservation.git
+cd primewave-resource-reservation
 ```
 
 #### 2. Install Dependencies
@@ -153,7 +152,7 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ## 🧪 6. Automated Testing & Verification Suite
 
-The repository includes comprehensive automated test suites covering all edge cases specified in Section 7 of the Assessment Guide.
+The repository includes comprehensive automated test suites covering interval collision mathematics, back-to-back reservations, and full end-to-end API workflows.
 
 ### 1. Run Core Overlap Algorithm Unit Tests
 Verifies mathematical collision detection, partial overlaps, enclosing intervals, and consecutive slots:
@@ -245,34 +244,19 @@ Total Checks: 11 | Passed: 11 | Failed: 0
 
 ---
 
-## 📹 8. Demo Video Structure (3–5 Minutes)
+## 📹 8. Video Demonstration & Feature Walkthrough
 
-When recording your assessment walkthrough, use this recommended structure:
+> 🔗 **Watch the Video Demonstration:** [System Walkthrough Video Link](https://www.youtube.com/watch?v=DEMO_LINK_HERE) *(Replace with your recording link)*
 
-* **0:00 - 0:45 | Introduction & Problem Context**:
-  * Welcome and introduction as the candidate.
-  * Explain the shared resource problem at PrimeWave Lab and how this system solves double bookings.
-* **0:45 - 1:30 | Dashboard & Interactive Schedule Timeline**:
-  * Show KPI metrics cards (total assets, bookings today, available facilities).
-  * Demonstrate the interactive 24-hour visual schedule timeline and date navigation.
-* **1:30 - 2:30 | Resource Management**:
-  * Navigate to `/resources`.
-  * Filter by category (Rooms, Equipment, Vehicles).
-  * Create a new resource ("Design Thinking Lab") and show it appearing instantly.
-* **2:30 - 3:30 | Booking Flow & Real-Time Conflict Detection**:
-  * Navigate to `/reservations/new`.
-  * Book a slot on the new resource (e.g. 10:00 AM – 11:30 AM).
-  * Attempt an overlapping booking (e.g. 11:00 AM – 12:30 PM) on the same resource.
-  * Highlight the real-time conflict alert explaining who booked it and the exact clashing times.
-* **3:30 - 4:15 | Cancellation & Slot Re-Use**:
-  * Show the active booking on `/reservations`.
-  * Click "Cancel Reservation" with modal confirmation.
-  * Show how the time slot is freed on the timeline and immediately bookable again.
-* **4:15 - 5:00 | Architecture & Code Walkthrough**:
-  * Briefly highlight `lib/overlap.ts` interval formula and atomic `prisma.$transaction`.
-  * Run `npm run test:overlap` and `npm run test:e2e` in the terminal to prove 100% test pass.
+### Key Capabilities Demonstrated in the Video
+* **Operations Dashboard**: Real-time KPI statistics, asset availability indicators, and today's schedule feed.
+* **Interactive 24-Hour Schedule Timeline**: Dynamic visual block view of company facilities with one-click slot booking.
+* **Resource Catalog (CRUD)**: Filtering by categories (Meeting Rooms, Audio/Visual Gear, Fleet Vehicles) and asset registration.
+* **Live Conflict Prevention in Action**: Demonstration of interval collision detection rejecting overlapping bookings in real time with descriptive error messages.
+* **Soft Cancellation & Slot Release**: Instant slot liberation and historical audit retention.
+* **Engineering Architecture**: Database-level atomic transactions (`prisma.$transaction`) and automated test verification.
 
 ---
 
 ## ⚖️ License
-Engineered for PrimeWave Lab (Pvt) Ltd Software Engineering Internship Technical Assessment.
+Engineered for PrimeWave Lab (Pvt) Ltd. Distributed under the MIT License.
