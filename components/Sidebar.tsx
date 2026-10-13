@@ -11,7 +11,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   X,
   ShieldCheck,
 } from "lucide-react";

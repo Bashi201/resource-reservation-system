@@ -1,5 +1,5 @@
 import React from "react";
-import { ExternalLink, Sparkles, Code2 } from "lucide-react";
+import { ExternalLink, Code2 } from "lucide-react";
 
 export function GitHubIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
@@ -54,8 +54,7 @@ export function DeveloperSignature({
             <Code2 className="w-3 h-3 text-indigo-500" />
             <span>Developer</span>
           </span>
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100/60">
-            <Sparkles className="w-2.5 h-2.5" />
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100/60">
             <span>Author</span>
           </span>
         </div>
@@ -118,8 +117,7 @@ export function DeveloperSignature({
               </p>
             </div>
           </div>
-          <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800">
-            <Sparkles className="w-3 h-3" />
+          <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800">
             <span>Author Signature</span>
           </span>
         </div>

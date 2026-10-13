@@ -152,3 +152,65 @@ h1, h2, h3, h4, h5, h6 {
   content: "";
 }
 
+/* Hero Soft Blue Ambient Animations */
+@keyframes hero-blob-float-1 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(25px, -18px) scale(1.06);
+  }
+  66% {
+    transform: translate(-18px, 12px) scale(0.96);
+  }
+}
+
+@keyframes hero-blob-float-2 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(-20px, 20px) scale(1.04);
+  }
+  66% {
+    transform: translate(15px, -12px) scale(0.95);
+  }
+}
+
+@keyframes hero-blob-float-3 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translate(12px, -20px) scale(1.12);
+    opacity: 0.45;
+  }
+}
+
+@keyframes hero-sheen-sweep {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  35%, 100% {
+    transform: translateX(250%) skewX(-20deg);
+  }
+}
+
+.animate-hero-float-1 {
+  animation: hero-blob-float-1 14s ease-in-out infinite;
+}
+
+.animate-hero-float-2 {
+  animation: hero-blob-float-2 18s ease-in-out infinite;
+}
+
+.animate-hero-float-3 {
+  animation: hero-blob-float-3 10s ease-in-out infinite;
+}
+
+.animate-hero-sheen {
+  animation: hero-sheen-sweep 9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+

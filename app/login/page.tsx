@@ -14,7 +14,7 @@ import {
   UserCheck,
   AlertCircle,
   Loader2,
-  Sparkles,
+
   CheckCircle2,
   Building2,
   Cpu,
@@ -197,8 +197,7 @@ export default function LoginPage() {
           }`}
         >
           {/* Brand Tag Pill */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold text-blue-100 mb-5 shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-blue-200" />
+          <div className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs font-semibold text-blue-100 mb-5 shadow-sm">
             <span>Enterprise Resource Orchestration Platform</span>
           </div>
 
