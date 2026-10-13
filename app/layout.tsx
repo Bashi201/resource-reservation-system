@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/Navbar";
+import { AppShell } from "@/components/AppShell";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-heading",
   subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -25,22 +29,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen flex flex-col antialiased selection:bg-indigo-500/30 selection:text-indigo-200`}
-      >
-        <Navbar />
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {children}
-        </main>
-        <footer className="border-t border-white/10 py-6 text-center text-xs text-slate-500">
-          <p>
-            © 2026 PrimeWave Lab (Pvt) Ltd • Resource Reservation Management System.
-          </p>
-          <p className="mt-1 text-[11px] text-slate-600">
-            Powered by Next.js 16 App Router, TypeScript, Prisma ORM, and PostgreSQL.
-          </p>
-        </footer>
+    <html lang="en" className={`${plusJakartaSans.variable} ${inter.variable}`}>
+      <body className="min-h-screen antialiased bg-slate-50 text-slate-900 selection:bg-indigo-500/20 selection:text-indigo-900">
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

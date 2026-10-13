@@ -42,7 +42,7 @@ async function runE2ETests() {
   // 2. Fetch Resources Catalog
   const listResourcesRes = await fetch(`${BASE_URL}/api/resources`);
   const resourceList = await listResourcesRes.json();
-  const foundCreated = resourceList.some((r: any) => r.id === createdResource.id);
+  const foundCreated = resourceList.some((r: { id: string }) => r.id === createdResource.id);
   assert(
     listResourcesRes.status === 200 && foundCreated,
     "Test 2: Resource appears in catalog immediately",
@@ -50,7 +50,7 @@ async function runE2ETests() {
   );
 
   console.log("\n--- 2. Booking Workflow & Conflict Detection Tests ---");
-  const testDate = addDays(new Date(), 2);
+  const testDate = addDays(new Date(), 10 + Math.floor(Math.random() * 50));
   const dateStr = format(testDate, "yyyy-MM-dd");
 
   const slot10to12Start = new Date(`${dateStr}T10:00:00Z`);
@@ -142,7 +142,7 @@ async function runE2ETests() {
   );
 
   // 7. Booking on Different Resource at Exact Same Time (MUST SUCCEED)
-  const otherResource = resourceList.find((r: any) => r.id !== createdResource.id && r.status === "AVAILABLE");
+  const otherResource = resourceList.find((r: { id: string; status: string }) => r.id !== createdResource.id && r.status === "AVAILABLE");
   if (otherResource) {
     const diffResourceRes = await fetch(`${BASE_URL}/api/reservations`, {
       method: "POST",

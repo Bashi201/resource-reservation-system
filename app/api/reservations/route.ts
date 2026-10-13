@@ -130,15 +130,16 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(result, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("POST /api/reservations error:", error);
-    if (error && error.status && error.message) {
+    const err = error as { status?: number; message?: string; conflictingReservation?: unknown };
+    if (err && err.status && err.message) {
       return NextResponse.json(
         {
-          error: error.message,
-          conflictingReservation: error.conflictingReservation,
+          error: err.message,
+          conflictingReservation: err.conflictingReservation,
         },
-        { status: error.status }
+        { status: err.status }
       );
     }
     return NextResponse.json({ error: "Internal server error occurred while booking" }, { status: 500 });

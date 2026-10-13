@@ -15,64 +15,76 @@ interface ResourceWithCount extends Resource {
 interface ResourceCardProps {
   resource: ResourceWithCount;
   onEdit?: (resource: ResourceWithCount) => void;
+  onBook?: (resource: ResourceWithCount) => void;
 }
 
-export function ResourceCard({ resource, onEdit }: ResourceCardProps) {
+export function ResourceCard({ resource, onEdit, onBook }: ResourceCardProps) {
   const isAvailable = resource.status === ResourceStatus.AVAILABLE;
+  const activeBookings = resource._count?.reservations ?? 0;
 
   return (
-    <div className="glass-card rounded-2xl p-6 flex flex-col justify-between group">
+    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs hover:border-indigo-300 hover:shadow-md hover:shadow-indigo-500/5 hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between group">
       <div>
         {/* Header badges */}
-        <div className="flex items-center justify-between mb-3.5">
+        <div className="flex items-center justify-between gap-2 mb-3.5">
           <ResourceTypeBadge type={resource.type} />
           <StatusBadge status={resource.status} type="resource" />
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-white group-hover:text-indigo-300 transition-colors">
+        <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
           {resource.name}
         </h3>
 
         {/* Description */}
-        <p className="mt-2 text-sm text-slate-400 line-clamp-2 leading-relaxed">
+        <p className="mt-2 text-xs sm:text-sm text-slate-500 line-clamp-2 leading-relaxed">
           {resource.description || "No specific details provided."}
         </p>
 
         {/* Meta info */}
-        <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
-          <div className="flex items-center gap-1.5">
-            <Users className="w-4 h-4 text-slate-500" />
+        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+          <div className="flex items-center gap-1.5 font-medium">
+            <Users className="w-4 h-4 text-slate-400" />
             <span>
               {resource.type === ResourceType.ROOM
-                ? `Capacity: ${resource.capacity} people`
-                : `Quantity / Seats: ${resource.capacity}`}
+                ? `Capacity: ${resource.capacity} seats`
+                : `Units / Seats: ${resource.capacity}`}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <Calendar className="w-4 h-4 text-slate-500" />
+          <div className="flex items-center gap-1.5 font-medium">
+            <Calendar className="w-4 h-4 text-slate-400" />
             <span>
-              {resource._count?.reservations ?? 0} active booking{(resource._count?.reservations ?? 0) === 1 ? "" : "s"}
+              {activeBookings} active booking{activeBookings === 1 ? "" : "s"}
             </span>
           </div>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="mt-6 pt-4 border-t border-white/5 flex items-center gap-2">
+      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2">
         {isAvailable ? (
-          <Link
-            href={`/reservations/new?resourceId=${resource.id}`}
-            className="flex-1 flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600/20 hover:bg-indigo-600/35 text-indigo-300 border border-indigo-500/30 transition-all hover:border-indigo-500/60"
-          >
-            <span>Book Slot</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+          onBook ? (
+            <button
+              onClick={() => onBook(resource)}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs hover:shadow-md hover:shadow-indigo-600/20 transition-all transform active:scale-95 cursor-pointer"
+            >
+              <span>Book Slot</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            <Link
+              href={`/reservations/new?resourceId=${resource.id}`}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs hover:shadow-md hover:shadow-indigo-600/20 transition-all transform active:scale-95"
+            >
+              <span>Book Slot</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          )
         ) : (
           <button
             disabled
-            className="flex-1 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800/40 text-slate-500 border border-slate-700/30 cursor-not-allowed"
+            className="flex-1 px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
           >
             Unavailable for Booking
           </button>
@@ -81,7 +93,7 @@ export function ResourceCard({ resource, onEdit }: ResourceCardProps) {
         {onEdit && (
           <button
             onClick={() => onEdit(resource)}
-            className="p-2 rounded-xl bg-slate-800/50 hover:bg-slate-700/60 text-slate-400 hover:text-slate-200 border border-white/10 transition-colors"
+            className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors"
             title="Edit Resource"
           >
             <Edit3 className="w-4 h-4" />
