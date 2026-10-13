@@ -24,8 +24,7 @@
 }
 
 html {
-  overflow-y: scroll;
-  scrollbar-gutter: stable;
+  overflow-y: auto;
 }
 
 body {
@@ -87,7 +86,7 @@ h1, h2, h3, h4, h5, h6 {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
