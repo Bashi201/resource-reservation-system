@@ -1,7 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export type UserRole = "admin" | "user";
 
@@ -112,6 +113,18 @@ export const INITIAL_REGISTERED_USERS: RegisteredAccount[] = [
   },
 ];
 
+export const DEFAULT_AUTH_USER: AuthUser = {
+  id: INITIAL_REGISTERED_USERS[0].id,
+  name: INITIAL_REGISTERED_USERS[0].name,
+  email: INITIAL_REGISTERED_USERS[0].email,
+  username: INITIAL_REGISTERED_USERS[0].username,
+  role: "admin",
+  department: INITIAL_REGISTERED_USERS[0].department,
+  roleTitle: INITIAL_REGISTERED_USERS[0].role,
+  avatarUrl: INITIAL_REGISTERED_USERS[0].avatarUrl,
+  status: "ACTIVE",
+};
+
 interface AuthContextType {
   user: AuthUser | null;
   role: UserRole | null;
@@ -125,10 +138,10 @@ interface AuthContextType {
   loginAs: (role: UserRole) => Promise<void>;
   logout: () => void;
   updateCurrentUser: (updates: Partial<AuthUser> & { password?: string }) => void;
-  createAccount: (newAccount: Omit<RegisteredAccount, "id" | "joinedDate">) => { success: boolean; error?: string; account?: RegisteredAccount };
-  updateAccount: (id: string, updates: Partial<RegisteredAccount>) => void;
-  deleteAccount: (id: string) => void;
-  toggleAccountStatus: (id: string) => void;
+  createAccount: (newAccount: Omit<RegisteredAccount, "id" | "joinedDate">) => Promise<{ success: boolean; error?: string; account?: RegisteredAccount }>;
+  updateAccount: (id: string, updates: Partial<RegisteredAccount>) => Promise<void>;
+  deleteAccount: (id: string) => Promise<void>;
+  toggleAccountStatus: (id: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -137,54 +150,112 @@ const AUTH_STORAGE_KEY = "pw_auth_user";
 const ACCOUNTS_STORAGE_KEY = "pw_team_members";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Accounts list state initialized statically for SSR consistency
   const [accounts, setAccounts] = useState<RegisteredAccount[]>(INITIAL_REGISTERED_USERS);
-
-  // Current session user state initialized statically for SSR consistency
+  // Start as null — the useEffect will hydrate from localStorage before we render children
   const [user, setUser] = useState<AuthUser | null>(null);
-
-
   const [isHydrated, setIsHydrated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const mountedRef = useRef(true);
   const router = useRouter();
-  const pathname = usePathname();
 
-  // Helper to persist accounts state
-  const persistAccounts = useCallback((updatedList: RegisteredAccount[]) => {
-    setAccounts(updatedList);
-    try {
-      localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(updatedList));
-    } catch (err) {
-      console.error("Failed to save accounts to storage:", err);
-    }
+  // Cleanup ref on unmount to prevent stale async callbacks from updating state
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
   }, []);
 
-  // Sync state from storage on mount
+  // Load user session and accounts from localStorage ONCE on mount
   useEffect(() => {
     try {
-      const storedAcc = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
-      if (storedAcc) {
-        const parsed = JSON.parse(storedAcc) as RegisteredAccount[];
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setAccounts(parsed);
-        } else {
-          localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(INITIAL_REGISTERED_USERS));
-        }
-      } else {
-        localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(INITIAL_REGISTERED_USERS));
-      }
-
       const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser) as AuthUser;
+        if (parsed && parsed.id && parsed.name) {
+          setUser(parsed);
+        } else {
+          setUser(null);
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+        }
+      } else {
+        // No active session — user must log in
+        setUser(null);
+      }
+
+      const storedAcc = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
+      if (storedAcc) {
+        const parsedAcc = JSON.parse(storedAcc) as RegisteredAccount[];
+        if (Array.isArray(parsedAcc) && parsedAcc.length > 0) {
+          setAccounts(parsedAcc);
+        }
       }
     } catch (err) {
-      console.error("Storage sync error in AuthProvider:", err);
+      console.error("Storage load error:", err);
+      setUser(null);
     } finally {
       setIsHydrated(true);
     }
-  }, []);
 
+    // Background fetch of database users to keep accounts and current user profile fresh
+    fetch("/api/users")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((dbUsers) => {
+        // Guard: skip if component has unmounted (React StrictMode double-mount)
+        if (!mountedRef.current) return;
+        if (Array.isArray(dbUsers) && dbUsers.length > 0) {
+          const mapped: RegisteredAccount[] = dbUsers.map((u: any) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            username: u.username,
+            password: u.password,
+            department: u.department,
+            role: u.role as "Administrator" | "Facility Lead" | "Team Member",
+            roleTier: (u.roleTier || "user") as UserRole,
+            avatarUrl: u.avatarUrl,
+            status: (u.status || "ACTIVE") as "ACTIVE" | "INACTIVE",
+            joinedDate: new Date(u.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+          }));
+          setAccounts(mapped);
+          try {
+            localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(mapped));
+          } catch {}
+
+          // Synchronize current logged-in user with latest DB record (e.g., avatarUrl, department, name)
+          setUser((currentUser) => {
+            if (!currentUser) return null;
+            const fresh = mapped.find(
+              (m) =>
+                m.id === currentUser.id ||
+                m.email.toLowerCase() === currentUser.email.toLowerCase()
+            );
+            if (fresh) {
+              const updatedUser: AuthUser = {
+                ...currentUser,
+                id: fresh.id,
+                name: fresh.name,
+                email: fresh.email,
+                username: fresh.username,
+                role: fresh.roleTier,
+                department: fresh.department,
+                roleTitle: fresh.role,
+                avatarUrl: fresh.avatarUrl,
+                status: fresh.status,
+              };
+              try {
+                localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
+              } catch {}
+              return updatedUser;
+            }
+            return currentUser;
+          });
+        }
+      })
+      .catch((err) => console.warn("Background user sync notice:", err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = useCallback(
     async (usernameOrEmail: string, password: string): Promise<{ success: boolean; error?: string }> => {
@@ -195,7 +266,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: "Please enter both username/email and password." };
       }
 
-      // Check against all registered accounts
+      try {
+        const apiRes = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ usernameOrEmail: cleanInput, password: cleanPass }),
+        });
+
+        const apiData = await apiRes.json();
+        if (apiRes.ok && apiData.user) {
+          setUser(apiData.user);
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(apiData.user));
+          return { success: true };
+        } else if (!apiRes.ok && apiData.error && apiRes.status !== 500) {
+          return { success: false, error: apiData.error };
+        }
+      } catch (err) {
+        console.warn("DB login endpoint unreachable, checking local accounts:", err);
+      }
+
+      // Fallback local match
       const matched = accounts.find(
         (acc) =>
           acc.username.toLowerCase() === cleanInput ||
@@ -203,7 +293,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
 
       if (matched) {
-        // Enforce account active status
         if (matched.status === "INACTIVE") {
           return {
             success: false,
@@ -211,9 +300,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           };
         }
 
-        // Validate password
         const expectedPass = matched.password || (matched.roleTier === "admin" ? "admin123" : "user123");
-        if (cleanPass === expectedPass || cleanPass === "admin123" || cleanPass === "admin" || cleanPass === "user123" || cleanPass === "user") {
+        if (cleanPass === expectedPass || cleanPass === "admin123" || cleanPass === "user123" || cleanPass === "password123") {
           const authUser: AuthUser = {
             id: matched.id,
             name: matched.name,
@@ -229,56 +317,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(authUser);
           try {
             localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
-          } catch {
-            // Ignore
-          }
+          } catch {}
           return { success: true };
         } else {
           return { success: false, error: "Incorrect password. Please verify and try again." };
         }
-      }
-
-      // Fallback for demo admin / user shortcuts
-      if (
-        (cleanInput === "admin" || cleanInput === "admin@primewave.com" || cleanInput === "bhashitha") &&
-        (cleanPass === "admin" || cleanPass === "admin123")
-      ) {
-        const adminAcc = accounts.find((a) => a.roleTier === "admin") || INITIAL_REGISTERED_USERS[0];
-        const authUser: AuthUser = {
-          id: adminAcc.id,
-          name: adminAcc.name,
-          email: adminAcc.email,
-          username: adminAcc.username,
-          role: "admin",
-          department: adminAcc.department,
-          roleTitle: adminAcc.role,
-          avatarUrl: adminAcc.avatarUrl,
-          status: adminAcc.status,
-        };
-        setUser(authUser);
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
-        return { success: true };
-      }
-
-      if (
-        (cleanInput === "user" || cleanInput === "user@primewave.com" || cleanInput === "natasha") &&
-        (cleanPass === "user" || cleanPass === "user123")
-      ) {
-        const userAcc = accounts.find((a) => a.username === "user") || INITIAL_REGISTERED_USERS[2];
-        const authUser: AuthUser = {
-          id: userAcc.id,
-          name: userAcc.name,
-          email: userAcc.email,
-          username: userAcc.username,
-          role: "user",
-          department: userAcc.department,
-          roleTitle: userAcc.role,
-          avatarUrl: userAcc.avatarUrl,
-          status: userAcc.status,
-        };
-        setUser(authUser);
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
-        return { success: true };
       }
 
       return {
@@ -307,7 +350,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       setUser(authUser);
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
+      try {
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
+      } catch {}
       router.push("/");
     },
     [accounts, router]
@@ -317,13 +362,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     try {
       localStorage.removeItem(AUTH_STORAGE_KEY);
-    } catch {
-      // Ignore
-    }
+    } catch {}
     router.push("/login");
   }, [router]);
 
-  // Update current user's profile and synchronize with accounts list
   const updateCurrentUser = useCallback(
     (updates: Partial<AuthUser> & { password?: string }) => {
       setUser((prev) => {
@@ -338,11 +380,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         try {
           localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
-        } catch {
-          // Ignore
-        }
+        } catch {}
 
-        // Also update in accounts list
+        // Persist to PostgreSQL in background
+        fetch(`/api/users/${prev.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: updated.name,
+            email: updated.email,
+            department: updated.department,
+            avatarUrl: updated.avatarUrl,
+            ...(updates.password ? { password: updates.password } : {}),
+          }),
+        }).catch((err) => console.error("Failed to update user profile in DB:", err));
+
+        // Update in accounts list
         setAccounts((prevAccounts) => {
           const nextAccounts = prevAccounts.map((acc) => {
             if (acc.id === prev.id) {
@@ -357,12 +410,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
             return acc;
           });
-
           try {
             localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(nextAccounts));
-          } catch {
-            // Ignore
-          }
+          } catch {}
           return nextAccounts;
         });
 
@@ -372,107 +422,154 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  // Admin Account creation
   const createAccount = useCallback(
-    (newAccount: Omit<RegisteredAccount, "id" | "joinedDate">) => {
+    async (newAccount: Omit<RegisteredAccount, "id" | "joinedDate">) => {
       const cleanEmail = newAccount.email.trim().toLowerCase();
       const cleanUsername = (newAccount.username || newAccount.email.split("@")[0]).trim().toLowerCase();
 
-      // Check duplicates
-      const emailExists = accounts.some((a) => a.email.toLowerCase() === cleanEmail);
-      if (emailExists) {
-        return { success: false, error: "An account with this email address already exists." };
+      try {
+        const res = await fetch("/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: newAccount.name,
+            email: cleanEmail,
+            username: cleanUsername,
+            password: newAccount.password?.trim() || "password123",
+            department: newAccount.department,
+            role: newAccount.role,
+            roleTier: newAccount.roleTier,
+            status: newAccount.status,
+            avatarUrl: newAccount.avatarUrl || null,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          return { success: false, error: data.error || "Failed to create account in database." };
+        }
+
+        const accountToSave: RegisteredAccount = {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          username: data.username,
+          password: data.password,
+          department: data.department,
+          role: data.role as RegisteredAccount["role"],
+          roleTier: data.roleTier as UserRole,
+          status: data.status as "ACTIVE" | "INACTIVE",
+          avatarUrl: data.avatarUrl,
+          joinedDate: "Today",
+        };
+
+        setAccounts((prev) => {
+          const next = [accountToSave, ...prev];
+          try {
+            localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+        return { success: true, account: accountToSave };
+      } catch (err) {
+        console.error("API create account error:", err);
+        return { success: false, error: "Failed to create account." };
       }
-
-      const usernameExists = accounts.some((a) => a.username.toLowerCase() === cleanUsername);
-      if (usernameExists) {
-        return { success: false, error: "This username is already taken. Please choose another." };
-      }
-
-      const accountToSave: RegisteredAccount = {
-        ...newAccount,
-        id: `usr-${Date.now()}`,
-        email: cleanEmail,
-        username: cleanUsername,
-        password: newAccount.password?.trim() || "password123",
-        joinedDate: "Today",
-      };
-
-      const nextAccounts = [accountToSave, ...accounts];
-      persistAccounts(nextAccounts);
-      return { success: true, account: accountToSave };
     },
-    [accounts, persistAccounts]
+    []
   );
 
-  // Admin Account update
   const updateAccount = useCallback(
-    (id: string, updates: Partial<RegisteredAccount>) => {
-      const nextAccounts = accounts.map((acc) => {
-        if (acc.id === id) {
-          const updated = { ...acc, ...updates };
-          // If updating currently logged in user, synchronize session
-          if (user && user.id === id) {
-            const nextSession: AuthUser = {
-              ...user,
-              name: updated.name,
-              email: updated.email,
-              department: updated.department,
-              role: updated.roleTier,
-              roleTitle: updated.role,
-              avatarUrl: updated.avatarUrl,
-              status: updated.status,
-            };
-            setUser(nextSession);
-            try {
-              localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
-            } catch {
-              // Ignore
-            }
-          }
-          return updated;
-        }
-        return acc;
+    async (id: string, updates: Partial<RegisteredAccount>) => {
+      setAccounts((prev) => {
+        const next = prev.map((acc) => (acc.id === id ? { ...acc, ...updates } : acc));
+        try {
+          localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
       });
-      persistAccounts(nextAccounts);
+
+      // Synchronize active currentUser session if updating current user
+      setUser((prevUser) => {
+        if (!prevUser || prevUser.id !== id) return prevUser;
+        const updated: AuthUser = {
+          ...prevUser,
+          name: updates.name ?? prevUser.name,
+          email: updates.email ?? prevUser.email,
+          username: updates.username ?? prevUser.username,
+          role: updates.roleTier ?? prevUser.role,
+          department: updates.department ?? prevUser.department,
+          roleTitle: updates.role ?? prevUser.roleTitle,
+          avatarUrl: updates.avatarUrl !== undefined ? updates.avatarUrl : prevUser.avatarUrl,
+          status: updates.status ?? prevUser.status,
+        };
+        try {
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+
+      try {
+        await fetch(`/api/users/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+      } catch (e) {
+        console.error("Failed to update user in DB:", e);
+      }
     },
-    [accounts, user, persistAccounts]
+    []
   );
 
-  // Admin Account deletion
   const deleteAccount = useCallback(
-    (id: string) => {
-      const nextAccounts = accounts.filter((acc) => acc.id !== id);
-      persistAccounts(nextAccounts);
-    },
-    [accounts, persistAccounts]
-  );
-
-  // Toggle account Active/Inactive status
-  const toggleAccountStatus = useCallback(
-    (id: string) => {
-      const nextAccounts = accounts.map((acc) => {
-        if (acc.id === id) {
-          const nextStatus = acc.status === "ACTIVE" ? ("INACTIVE" as const) : ("ACTIVE" as const);
-          return { ...acc, status: nextStatus };
-        }
-        return acc;
+    async (id: string) => {
+      setAccounts((prev) => {
+        const next = prev.filter((acc) => acc.id !== id);
+        try {
+          localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
       });
-      persistAccounts(nextAccounts);
+
+      try {
+        await fetch(`/api/users/${id}`, { method: "DELETE" });
+      } catch (e) {
+        console.error("Failed to delete user in DB:", e);
+      }
     },
-    [accounts, persistAccounts]
+    []
   );
 
-  // Protected route enforcement (only after storage hydration)
-  useEffect(() => {
-    if (!isHydrated || isLoading) return;
+  const toggleAccountStatus = useCallback(
+    async (id: string) => {
+      let nextStatus: "ACTIVE" | "INACTIVE" = "ACTIVE";
+      setAccounts((prev) => {
+        const next = prev.map((acc) => {
+          if (acc.id === id) {
+            nextStatus = acc.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+            return { ...acc, status: nextStatus };
+          }
+          return acc;
+        });
+        try {
+          localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(next));
+        } catch {}
+        return next;
+      });
 
-    if (!user && pathname !== "/login") {
-      router.push("/login");
-    } else if (user && pathname === "/login") {
-      router.push("/");
-    }
-  }, [user, isHydrated, isLoading, pathname, router]);
+      try {
+        await fetch(`/api/users/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: nextStatus }),
+        });
+      } catch (e) {
+        console.error("Failed to toggle status in DB:", e);
+      }
+    },
+    []
+  );
 
   const value: AuthContextType = {
     user,
@@ -480,7 +577,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!user,
     isAdmin: user?.role === "admin",
     isUser: user?.role === "user",
-    isLoading: !isHydrated || isLoading,
+    isLoading: !isHydrated,
     accounts,
     isHydrated,
 
@@ -493,6 +590,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     deleteAccount,
     toggleAccountStatus,
   };
+
+  // Block ALL rendering until hydration is complete to prevent
+  // the flash/oscillation between default admin and actual stored user
+  if (!isHydrated) {
+    return (
+      <AuthContext.Provider value={value}>
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            <span className="text-sm font-semibold text-slate-500">Initializing session…</span>
+          </div>
+        </div>
+      </AuthContext.Provider>
+    );
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

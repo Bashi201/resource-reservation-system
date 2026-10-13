@@ -24,6 +24,25 @@ enum ReservationStatus {
   CANCELLED
 }
 
+model User {
+  id          String        @id @default(cuid())
+  name        String
+  email       String        @unique
+  username    String        @unique
+  password    String        @default("password123")
+  department  String        @default("Engineering")
+  role        String        @default("Team Member")
+  roleTier    String        @default("user") @map("role_tier")
+  avatarUrl   String?       @map("avatar_url")
+  status      String        @default("ACTIVE")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  reservations Reservation[]
+
+  @@map("users")
+}
+
 model Resource {
   id          String         @id @default(cuid())
   name        String
@@ -43,6 +62,7 @@ model Resource {
 model Reservation {
   id          String            @id @default(cuid())
   resourceId  String            @map("resource_id")
+  userId      String?           @map("user_id")
   bookerName  String            @map("booker_name")
   bookerEmail String            @map("booker_email")
   title       String
@@ -53,8 +73,10 @@ model Reservation {
   updatedAt   DateTime          @updatedAt @map("updated_at")
 
   resource Resource @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([resourceId, startTime, endTime])
   @@index([startTime, endTime])
+  @@index([userId])
   @@map("reservations")
 }

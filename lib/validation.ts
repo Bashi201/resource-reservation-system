@@ -25,6 +25,7 @@ export const updateResourceSchema = resourceSchema.partial();
 export const reservationSchema = z
   .object({
     resourceId: z.string().min(1, "Please select a valid resource"),
+    userId: z.string().trim().optional().nullable(),
     bookerName: z
       .string()
       .trim()
@@ -65,6 +66,7 @@ export const reservationSchema = z
 export const updateReservationSchema = z
   .object({
     title: z.string().trim().min(3).max(150).optional(),
+    userId: z.string().trim().optional().nullable(),
     bookerName: z.string().trim().min(2).max(100).optional(),
     bookerEmail: z.string().trim().email().optional(),
     startTime: z.coerce.date().optional(),
@@ -83,3 +85,18 @@ export const updateReservationSchema = z
       path: ["endTime"],
     }
   );
+
+export const userSchema = z.object({
+  name: z.string().trim().min(2, "Full name must be at least 2 characters"),
+  email: z.string().trim().email("Please provide a valid email address"),
+  username: z.string().trim().min(2, "Username must be at least 2 characters"),
+  password: z.string().trim().min(4, "Password must be at least 4 characters").optional(),
+  department: z.string().trim().default("Engineering"),
+  role: z.string().trim().default("Team Member"),
+  roleTier: z.enum(["admin", "user"]).default("user"),
+  avatarUrl: z.string().trim().optional().nullable(),
+  status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
+});
+
+export const updateUserSchema = userSchema.partial();
+

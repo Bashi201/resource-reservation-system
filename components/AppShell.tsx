@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useBranding } from "@/lib/branding-context";
 import { Sidebar } from "./Sidebar";
@@ -9,14 +9,14 @@ import { Navbar } from "./Navbar";
 import { DeveloperSignature } from "./DeveloperSignature";
 import { Loader2 } from "lucide-react";
 
-
 interface AppShellProps {
   children: React.ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
-  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+  const { isAuthenticated, isHydrated } = useAuth();
   const { branding } = useBranding();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -33,6 +33,13 @@ export function AppShell({ children }: AppShellProps) {
     }
   }, []);
 
+  // Route Protection: Unauthenticated visitors cannot access protected application routes
+  useEffect(() => {
+    if (isHydrated && !isAuthenticated && pathname !== "/login") {
+      router.replace("/login");
+    }
+  }, [isHydrated, isAuthenticated, pathname, router]);
+
   const handleToggleCollapse = () => {
     setIsCollapsed((prev) => {
       const next = !prev;
@@ -48,6 +55,18 @@ export function AppShell({ children }: AppShellProps) {
   // If on /login page, render without standard app shell chrome
   if (pathname === "/login") {
     return <>{children}</>;
+  }
+
+  // Guard for protected routes: show clean transition if unauthenticated or not yet hydrated
+  if (!isHydrated || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+          <span className="text-sm font-semibold text-slate-500">Redirecting to login…</span>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -36,7 +36,12 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [logoutFeedback, setLogoutFeedback] = useState(false);
+  const [avatarImgError, setAvatarImgError] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setAvatarImgError(false);
+  }, [user?.avatarUrl]);
 
   // Live real-time Date & Time updater
   useEffect(() => {
@@ -193,7 +198,7 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
               aria-label="User Account Menu"
               aria-expanded={isUserMenuOpen}
             >
-              {isHydrated && user?.avatarUrl ? (
+              {isHydrated && user?.avatarUrl && !avatarImgError ? (
                 <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-200 shadow-xs shrink-0">
                   <Image
                     src={user.avatarUrl}
@@ -201,6 +206,7 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
                     fill
                     sizes="32px"
                     className="object-cover"
+                    onError={() => setAvatarImgError(true)}
                   />
                 </div>
               ) : (
@@ -236,7 +242,7 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
                 {/* Account Details Header */}
                 <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100 mb-1.5">
                   <div className="flex items-center gap-2.5">
-                    {isHydrated && user?.avatarUrl ? (
+                    {isHydrated && user?.avatarUrl && !avatarImgError ? (
                       <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-slate-200 shadow-2xs shrink-0">
                         <Image
                           src={user.avatarUrl}
@@ -244,6 +250,7 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
                           fill
                           sizes="36px"
                           className="object-cover"
+                          onError={() => setAvatarImgError(true)}
                         />
                       </div>
                     ) : (

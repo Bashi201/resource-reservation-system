@@ -43,7 +43,21 @@ This project delivers a **production-grade, full-stack centralized reservation m
 
 ```mermaid
 erDiagram
+    USER ||--o{ RESERVATION : "books"
     RESOURCE ||--o{ RESERVATION : "has many"
+
+    USER {
+        string id PK "cuid"
+        string name "Full name"
+        string email UK "Corporate email"
+        string username UK "Login handle"
+        string department "Engineering, Design, etc."
+        string role "Administrator | Facility Lead | Team Member"
+        string role_tier "admin | user"
+        string status "ACTIVE | INACTIVE"
+        datetime created_at "UTC timestamp"
+        datetime updated_at "UTC timestamp"
+    }
 
     RESOURCE {
         string id PK "cuid / uuid"
@@ -59,6 +73,7 @@ erDiagram
     RESERVATION {
         string id PK "cuid / uuid"
         string resource_id FK "References RESOURCE(id)"
+        string user_id FK "References USER(id), nullable"
         string booker_name "Full name"
         string booker_email "Corporate email"
         string title "Meeting / Usage purpose"
@@ -72,9 +87,13 @@ erDiagram
 
 ### Key Schema Decisions & Integrity Constraints
 
-1. **Foreign Key Integrity**: `reservations.resource_id -> resources.id` with `onDelete: Restrict`, prohibiting accidental deletion of resources with active upcoming reservations.
+1. **Foreign Key Integrity**:
+   - `reservations.resource_id -> resources.id` with `onDelete: Restrict`, prohibiting accidental deletion of resources with active upcoming reservations.
+   - `reservations.user_id -> users.id` with `onDelete: SetNull`, preserving reservation audit history while associating bookings directly with user accounts.
 2. **Compound Timestamp Index**: `@@index([resourceId, startTime, endTime])` ensures $O(\log n)$ performance during overlap queries even under heavy table volume.
 3. **Soft Cancellation Lifecycle**: Cancelled bookings update to `status = CANCELLED`. The conflict algorithm only evaluates `status = CONFIRMED`, immediately freeing the time slot while preserving historical usage metrics.
+4. **Relational User Management**: Accounts created or updated through the Admin Team Management interface persist directly into PostgreSQL `users` table and can authenticate immediately.
+
 
 ---
 

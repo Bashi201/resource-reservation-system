@@ -189,6 +189,7 @@ export function BookingModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           resourceId,
+          userId: user?.id || null,
           bookerName: bookerName.trim(),
           bookerEmail: bookerEmail.trim(),
           title: title.trim(),

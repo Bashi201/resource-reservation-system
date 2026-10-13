@@ -29,7 +29,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, loginAs } = useAuth();
+  const { login, loginAs, isAuthenticated, isHydrated } = useAuth();
   const { branding } = useBranding();
 
   const [username, setUsername] = useState("");
@@ -49,6 +49,13 @@ export default function LoginPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Redirect to dashboard if user is already authenticated
+  useEffect(() => {
+    if (isHydrated && isAuthenticated) {
+      router.replace("/");
+    }
+  }, [isHydrated, isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -153,7 +153,7 @@ export default function UsersPage() {
     }
   };
 
-  const handleSaveMember = (e: React.FormEvent) => {
+  const handleSaveMember = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
@@ -171,7 +171,7 @@ export default function UsersPage() {
     const roleTier: UserRole = formRole === "Administrator" ? "admin" : "user";
 
     if (editingAccount) {
-      updateAccount(editingAccount.id, {
+      await updateAccount(editingAccount.id, {
         name: formName.trim(),
         email: formEmail.trim().toLowerCase(),
         username: formUsername.trim().toLowerCase(),
@@ -185,7 +185,7 @@ export default function UsersPage() {
 
       setActionSuccess(`Account for "${formName.trim()}" updated successfully.`);
     } else {
-      const result = createAccount({
+      const result = await createAccount({
         name: formName.trim(),
         email: formEmail.trim().toLowerCase(),
         username: formUsername.trim().toLowerCase(),
@@ -209,8 +209,8 @@ export default function UsersPage() {
     setIsModalOpen(false);
   };
 
-  const handleToggleStatus = (account: RegisteredAccount) => {
-    toggleAccountStatus(account.id);
+  const handleToggleStatus = async (account: RegisteredAccount) => {
+    await toggleAccountStatus(account.id);
     setActionSuccess(
       `Account for "${account.name}" marked as ${
         account.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE"
@@ -223,9 +223,9 @@ export default function UsersPage() {
     setAccountToDelete(account);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!accountToDelete) return;
-    deleteAccount(accountToDelete.id);
+    await deleteAccount(accountToDelete.id);
     setActionSuccess(`Account for "${accountToDelete.name}" was permanently removed.`);
     setTimeout(() => setActionSuccess(null), 3500);
     setAccountToDelete(null);

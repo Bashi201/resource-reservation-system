@@ -9,6 +9,84 @@ async function main() {
   await prisma.reservation.deleteMany();
   await prisma.resource.deleteMany();
 
+  const usersData = [
+    {
+      id: "usr-1",
+      name: "Bhashitha W.",
+      email: "bhashitha@primewave.com",
+      username: "admin",
+      password: "admin123",
+      department: "Engineering",
+      role: "Administrator",
+      roleTier: "admin",
+      status: "ACTIVE",
+    },
+    {
+      id: "usr-2",
+      name: "Samantha Wright",
+      email: "samantha@primewave.com",
+      username: "samantha",
+      password: "password123",
+      department: "Executive",
+      role: "Facility Lead",
+      roleTier: "user",
+      status: "ACTIVE",
+    },
+    {
+      id: "usr-3",
+      name: "Natasha Roman",
+      email: "natasha.r@primewave.com",
+      username: "user",
+      password: "user123",
+      department: "Product & Design",
+      role: "Team Member",
+      roleTier: "user",
+      status: "ACTIVE",
+    },
+    {
+      id: "usr-4",
+      name: "David Miller",
+      email: "david.m@primewave.com",
+      username: "david",
+      password: "password123",
+      department: "Product & Design",
+      role: "Team Member",
+      roleTier: "user",
+      status: "ACTIVE",
+    },
+    {
+      id: "usr-5",
+      name: "Elena Rostova",
+      email: "elena.r@primewave.com",
+      username: "elena",
+      password: "password123",
+      department: "Operations",
+      role: "Facility Lead",
+      roleTier: "user",
+      status: "ACTIVE",
+    },
+    {
+      id: "usr-6",
+      name: "Marcus Vance",
+      email: "marcus.v@primewave.com",
+      username: "marcus",
+      password: "password123",
+      department: "Marketing",
+      role: "Team Member",
+      roleTier: "user",
+      status: "ACTIVE",
+    },
+  ];
+
+  for (const u of usersData) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: u,
+      create: u,
+    });
+  }
+  console.log(`✅ Seeded ${usersData.length} users.`);
+
   const resourcesData = [
     {
       name: "Innovation Boardroom Alpha",

@@ -27,7 +27,7 @@ export default function DashboardPage() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [reservations, setReservations] = useState<ReservationWithResource[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
 
   // Booking Modal Window state
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -65,7 +65,6 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    setSelectedDate(new Date());
     fetchData();
   }, [fetchData]);
 

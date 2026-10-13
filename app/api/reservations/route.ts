@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
       },
       include: {
         resource: true,
+        user: true,
       },
       orderBy: {
         startTime: "desc",
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { resourceId, bookerName, bookerEmail, title, startTime, endTime } = validated.data;
+    const { resourceId, userId, bookerName, bookerEmail, title, startTime, endTime } = validated.data;
 
     // Concurrency Guard: Atomic Database Transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -110,10 +111,22 @@ export async function POST(request: NextRequest) {
         };
       }
 
+      // Check if user can be linked
+      let finalUserId = userId;
+      if (!finalUserId && bookerEmail) {
+        const matchedUser = await tx.user.findFirst({
+          where: { email: { equals: bookerEmail, mode: "insensitive" } },
+        });
+        if (matchedUser) {
+          finalUserId = matchedUser.id;
+        }
+      }
+
       // 3. Create confirmed reservation
       const newReservation = await tx.reservation.create({
         data: {
           resourceId,
+          userId: finalUserId || null,
           bookerName,
           bookerEmail,
           title,
@@ -123,6 +136,7 @@ export async function POST(request: NextRequest) {
         },
         include: {
           resource: true,
+          user: true,
         },
       });
 

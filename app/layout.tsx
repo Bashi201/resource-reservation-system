@@ -25,6 +25,8 @@ export const metadata: Metadata = {
     "Centralized shared resource booking platform engineered for PrimeWave Lab. Real-time conflict detection, high-concurrency protection, and facility schedule management.",
 };
 
+export const instant = false;
+
 export default function RootLayout({
   children,
 }: {

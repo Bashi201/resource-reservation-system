@@ -44,6 +44,7 @@ export default function SettingsPage() {
   const [profileEmail, setProfileEmail] = useState(user?.email || "");
   const [profileDept, setProfileDept] = useState(user?.department || "Engineering");
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(user?.avatarUrl || null);
+  const [avatarImgError, setAvatarImgError] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -55,6 +56,7 @@ export default function SettingsPage() {
       setProfileEmail(user.email);
       setProfileDept(user.department);
       setProfileAvatarUrl(user.avatarUrl || null);
+      setAvatarImgError(false);
     }
   }, [user]);
 
@@ -182,6 +184,10 @@ export default function SettingsPage() {
 
       const data = await res.json();
       setProfileAvatarUrl(data.url);
+      setAvatarImgError(false);
+      updateCurrentUser({ avatarUrl: data.url });
+      setSavedSuccess("Profile picture updated and saved across your workspace!");
+      setTimeout(() => setSavedSuccess(null), 4000);
     } catch (err: unknown) {
       console.error(err);
       setFormError(err instanceof Error ? err.message : "Error uploading avatar");
@@ -455,13 +461,14 @@ export default function SettingsPage() {
             {/* Avatar Section */}
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row items-center gap-6">
               <div className="relative w-24 h-24 rounded-2xl overflow-hidden border-2 border-white shadow-md bg-white shrink-0 flex items-center justify-center">
-                {profileAvatarUrl ? (
+                {profileAvatarUrl && !avatarImgError ? (
                   <Image
                     src={profileAvatarUrl}
                     alt={profileName || "User avatar"}
                     fill
                     sizes="96px"
                     className="object-cover"
+                    onError={() => setAvatarImgError(true)}
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-tr from-indigo-600 to-blue-600 text-white font-bold text-2xl flex items-center justify-center">
@@ -499,7 +506,13 @@ export default function SettingsPage() {
                   {profileAvatarUrl && (
                     <button
                       type="button"
-                      onClick={() => setProfileAvatarUrl(null)}
+                      onClick={() => {
+                        setProfileAvatarUrl(null);
+                        setAvatarImgError(false);
+                        updateCurrentUser({ avatarUrl: null });
+                        setSavedSuccess("Profile picture removed successfully.");
+                        setTimeout(() => setSavedSuccess(null), 3000);
+                      }}
                       className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                     >
                       Remove Picture
