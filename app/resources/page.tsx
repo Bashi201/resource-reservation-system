@@ -19,8 +19,10 @@ import {
   Trash2,
   RotateCw,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 export default function ResourcesPage() {
+  const { isAdmin } = useAuth();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -73,6 +75,7 @@ export default function ResourcesPage() {
   }, [fetchResources]);
 
   const openCreateModal = () => {
+    if (!isAdmin) return;
     setEditingResource(null);
     setFormName("");
     setFormType(ResourceType.ROOM);
@@ -86,6 +89,7 @@ export default function ResourcesPage() {
   };
 
   const openEditModal = (res: Resource) => {
+    if (!isAdmin) return;
     setEditingResource(res);
     setFormName(res.name);
     setFormType(res.type);
@@ -158,6 +162,10 @@ export default function ResourcesPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) {
+      setModalError("Unauthorized: Only administrators can create or edit resources.");
+      return;
+    }
     setSaving(true);
     setModalError(null);
 
@@ -237,13 +245,15 @@ export default function ResourcesPage() {
           </p>
         </div>
 
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs hover:shadow-md hover:shadow-indigo-600/20 transition-all transform active:scale-95 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Resource</span>
-        </button>
+        {isAdmin && (
+          <button
+            onClick={openCreateModal}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs hover:shadow-md hover:shadow-indigo-600/20 transition-all transform active:scale-95 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Resource</span>
+          </button>
+        )}
       </div>
 
       {actionSuccess && (
@@ -324,7 +334,7 @@ export default function ResourcesPage() {
             <ResourceCard
               key={resource.id}
               resource={resource}
-              onEdit={openEditModal}
+              onEdit={isAdmin ? openEditModal : undefined}
               onBook={(r) => {
                 setBookingResourceId(r.id);
                 setIsBookingModalOpen(true);

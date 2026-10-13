@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
+import { AuthProvider } from "@/lib/auth-context";
+import { BrandingProvider } from "@/lib/branding-context";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-heading",
@@ -31,7 +33,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${plusJakartaSans.variable} ${inter.variable}`}>
       <body className="min-h-screen antialiased bg-slate-50 text-slate-900 selection:bg-indigo-500/20 selection:text-indigo-900">
-        <AppShell>{children}</AppShell>
+        <AuthProvider>
+          <BrandingProvider>
+            <AppShell>{children}</AppShell>
+          </BrandingProvider>
+        </AuthProvider>
       </body>
     </html>
   );

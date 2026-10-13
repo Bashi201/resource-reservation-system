@@ -1,28 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { useBranding } from "@/lib/branding-context";
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
+import { Loader2 } from "lucide-react";
 
 interface AppShellProps {
   children: React.ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {
+  const pathname = usePathname();
+  const { isAuthenticated, isLoading } = useAuth();
+  const { branding } = useBranding();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("pw_sidebar_collapsed");
-        if (saved !== null) {
-          return saved === "true";
-        }
-      } catch {
-        // Ignore
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Sync collapsed preference after hydration
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("pw_sidebar_collapsed");
+      if (saved !== null) {
+        setIsCollapsed(saved === "true");
       }
+    } catch {
+      // Ignore
     }
-    return false;
-  });
+  }, []);
 
   const handleToggleCollapse = () => {
     setIsCollapsed((prev) => {
@@ -35,6 +42,11 @@ export function AppShell({ children }: AppShellProps) {
       return next;
     });
   };
+
+  // If on /login page, render without standard app shell chrome
+  if (pathname === "/login") {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
@@ -70,7 +82,7 @@ export function AppShell({ children }: AppShellProps) {
         }`}
       >
         <div className="w-full max-w-[1780px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>© 2026 PrimeWave Lab (Pvt) Ltd • Resource Reservation Management System</p>
+          <p>© 2026 {branding.companyName} • {branding.tagline}</p>
           <div className="flex items-center gap-4 text-[11px] text-slate-400">
             <span>Next.js 16 App Router</span>
             <span>•</span>

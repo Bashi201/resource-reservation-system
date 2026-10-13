@@ -52,8 +52,9 @@ export default function ReservationsPage() {
   const [cancellingRes, setCancellingRes] = useState<ReservationWithResource | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
-  // Success Notification
+  // Success & Error Notifications
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -156,7 +157,8 @@ export default function ReservationsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Failed to cancel reservation.");
+        setActionError(data.error || "Failed to cancel reservation.");
+        setTimeout(() => setActionError(null), 4000);
         return;
       }
 
@@ -166,7 +168,8 @@ export default function ReservationsPage() {
       fetchData();
     } catch (err) {
       console.error("Cancel error:", err);
-      alert("Failed to cancel reservation.");
+      setActionError("Failed to cancel reservation. Please check your connection.");
+      setTimeout(() => setActionError(null), 4000);
     } finally {
       setCancelling(false);
     }
@@ -214,6 +217,13 @@ export default function ReservationsPage() {
         <div className="flex items-center gap-2.5 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{actionSuccess}</span>
+        </div>
+      )}
+
+      {actionError && (
+        <div className="flex items-center gap-2.5 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium animate-in fade-in">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{actionError}</span>
         </div>
       )}
 

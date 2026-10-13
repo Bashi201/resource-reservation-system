@@ -16,6 +16,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import Image from "next/image";
+import { useAuth } from "@/lib/auth-context";
+import { useBranding } from "@/lib/branding-context";
+
 interface SidebarProps {
   isMobileOpen: boolean;
   onCloseMobile: () => void;
@@ -30,14 +34,17 @@ export function Sidebar({
   onToggleCollapse,
 }: SidebarProps) {
   const pathname = usePathname();
+  const { user, isAdmin, isHydrated } = useAuth();
+  const { branding } = useBranding();
 
-  const navItems = [
+  const allNavItems = [
     {
       href: "/",
       label: "Dashboard",
       icon: LayoutDashboard,
       description: "Overview & Schedule",
       exact: true,
+      adminOnly: false,
     },
     {
       href: "/resources",
@@ -45,6 +52,7 @@ export function Sidebar({
       icon: Layers,
       description: "Facilities & Equipment",
       exact: false,
+      adminOnly: false,
     },
     {
       href: "/reservations",
@@ -52,6 +60,7 @@ export function Sidebar({
       icon: Calendar,
       description: "Bookings & Timeline",
       exact: false,
+      adminOnly: false,
     },
     {
       href: "/users",
@@ -59,6 +68,7 @@ export function Sidebar({
       icon: Users,
       description: "Team & Permissions",
       exact: false,
+      adminOnly: true,
     },
     {
       href: "/settings",
@@ -66,8 +76,14 @@ export function Sidebar({
       icon: Settings,
       description: "Preferences & System",
       exact: false,
+      adminOnly: false,
     },
   ];
+
+  // During SSR and initial hydration, render common non-admin items to ensure 100% markup match
+  const navItems = isHydrated
+    ? allNavItems.filter((item) => !item.adminOnly || isAdmin)
+    : allNavItems.filter((item) => !item.adminOnly);
 
   const isItemActive = (href: string, exact: boolean) => {
     if (exact) return pathname === href;
@@ -86,13 +102,20 @@ export function Sidebar({
               isCollapsed ? "justify-center w-full" : ""
             }`}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-600 flex items-center justify-center shadow-md shadow-indigo-600/20 shrink-0">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-11 h-11 rounded-xl bg-white border border-slate-200/90 p-1.5 flex items-center justify-center shadow-xs shrink-0 relative overflow-hidden ring-2 ring-slate-100">
+              <Image
+                src={branding.logoUrl || "/company-logo.png"}
+                alt={branding.brandTitle}
+                width={36}
+                height={36}
+                className="object-contain"
+                priority
+              />
             </div>
             {!isCollapsed && (
               <div className="overflow-hidden whitespace-nowrap animate-in fade-in duration-200">
                 <span className="text-base font-bold tracking-tight text-slate-900 block leading-tight">
-                  PrimeWave Lab
+                  {branding.brandTitle}
                 </span>
                 <span className="text-[10px] font-semibold tracking-wider uppercase text-indigo-600 block">
                   Resource Hub
@@ -176,24 +199,52 @@ export function Sidebar({
         {/* System Operator Badge */}
         {!isCollapsed ? (
           <div className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">
-              PW
-            </div>
+            {user?.avatarUrl ? (
+              <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-slate-200">
+                <Image
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  fill
+                  sizes="32px"
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <div className={`w-8 h-8 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 ${
+                isAdmin ? "bg-indigo-100 text-indigo-700" : "bg-slate-200 text-slate-700"
+              }`}>
+                {user ? user.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() : "PW"}
+              </div>
+            )}
             <div className="overflow-hidden">
               <p className="text-xs font-semibold text-slate-800 leading-tight truncate">
-                Admin Console
+                {user ? user.name : (isAdmin ? "Admin Console" : "User Portal")}
               </p>
               <div className="flex items-center gap-1 mt-0.5 text-[10px] text-slate-500">
                 <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                <span>Verified Session</span>
+                <span className="truncate">{user?.roleTitle || (isAdmin ? "Administrator" : "Standard User")}</span>
               </div>
             </div>
           </div>
         ) : (
-          <div className="flex justify-center" title="Admin Console">
-            <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">
-              PW
-            </div>
+          <div className="flex justify-center" title={user?.name || (isAdmin ? "Admin Console" : "User Portal")}>
+            {user?.avatarUrl ? (
+              <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-200">
+                <Image
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  fill
+                  sizes="32px"
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <div className={`w-8 h-8 rounded-lg font-bold text-xs flex items-center justify-center ${
+                isAdmin ? "bg-indigo-100 text-indigo-700" : "bg-slate-200 text-slate-700"
+              }`}>
+                {user ? user.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() : "PW"}
+              </div>
+            )}
           </div>
         )}
 

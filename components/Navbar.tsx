@@ -19,6 +19,9 @@ import {
   UserCheck,
   ShieldCheck,
 } from "lucide-react";
+import Image from "next/image";
+import { useAuth } from "@/lib/auth-context";
+import { useBranding } from "@/lib/branding-context";
 
 interface NavbarProps {
   onOpenMobileMenu: () => void;
@@ -27,6 +30,8 @@ interface NavbarProps {
 
 export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
   const pathname = usePathname();
+  const { user, isAdmin, logout } = useAuth();
+  const { branding } = useBranding();
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [logoutFeedback, setLogoutFeedback] = useState(false);
@@ -60,7 +65,9 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
   const handleLogout = () => {
     setIsUserMenuOpen(false);
     setLogoutFeedback(true);
-    setTimeout(() => setLogoutFeedback(false), 3500);
+    setTimeout(() => {
+      logout();
+    }, 400);
   };
 
   // Dynamic breadcrumb generation
@@ -108,7 +115,7 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
       };
     }
     return {
-      title: "PrimeWave Resource Hub",
+      title: `${branding.brandTitle} Hub`,
       icon: LayoutDashboard,
       crumb: "System",
     };
@@ -116,6 +123,10 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
 
   const breadcrumb = getBreadcrumbs();
   const Icon = breadcrumb.icon;
+
+  const userInitials = user
+    ? user.name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()
+    : "BW";
 
   return (
     <header
@@ -137,7 +148,7 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
           <div className="flex items-center gap-2 min-w-0">
             <div className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-slate-400">
               <Link href="/" className="hover:text-slate-700 transition-colors">
-                PrimeWave
+                {branding.brandTitle}
               </Link>
               <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
             </div>
@@ -155,7 +166,7 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
 
         {/* Right Section: Live Date/Time, Quick Action CTA & User Account Dropdown */}
         <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
-          {/* Live Date & Time Display (persistent fixed dimensions to prevent any layout shift) */}
+          {/* Live Date & Time Display */}
           <div className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs min-w-[175px] h-[34px]">
             <Clock className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
             <span className="whitespace-nowrap">
@@ -180,15 +191,33 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
               aria-label="User Account Menu"
               aria-expanded={isUserMenuOpen}
             >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                BW
-              </div>
+              {user?.avatarUrl ? (
+                <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-200 shadow-xs shrink-0">
+                  <Image
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    fill
+                    sizes="32px"
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <div className={`w-8 h-8 rounded-lg text-white font-bold text-xs flex items-center justify-center shadow-xs shrink-0 ${
+                  isAdmin
+                    ? "bg-gradient-to-tr from-indigo-600 to-blue-600"
+                    : "bg-gradient-to-tr from-sky-600 to-teal-600"
+                }`}>
+                  {userInitials}
+                </div>
+              )}
               <div className="hidden lg:block text-left">
                 <span className="block text-xs font-bold text-slate-900 leading-tight">
-                  Bhashitha W.
+                  {user ? user.name : "Guest User"}
                 </span>
-                <span className="block text-[10px] font-semibold text-indigo-600">
-                  Dev Admin
+                <span className={`block text-[10px] font-semibold ${
+                  isAdmin ? "text-indigo-600" : "text-teal-600"
+                }`}>
+                  {user?.roleTitle || (isAdmin ? "Administrator" : "Team Member")}
                 </span>
               </div>
               <ChevronDown
@@ -204,34 +233,52 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
                 {/* Account Details Header */}
                 <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100 mb-1.5">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                      BW
-                    </div>
+                    {user?.avatarUrl ? (
+                      <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-slate-200 shadow-2xs shrink-0">
+                        <Image
+                          src={user.avatarUrl}
+                          alt={user.name}
+                          fill
+                          sizes="36px"
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className={`w-9 h-9 rounded-xl text-white font-bold text-xs flex items-center justify-center shrink-0 ${
+                        isAdmin
+                          ? "bg-gradient-to-tr from-indigo-600 to-blue-600"
+                          : "bg-gradient-to-tr from-sky-600 to-teal-600"
+                      }`}>
+                        {userInitials}
+                      </div>
+                    )}
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-slate-900 truncate">
-                        Bhashitha W.
+                        {user ? user.name : "User"}
                       </p>
                       <p className="text-[11px] text-slate-500 truncate">
-                        bhashitha@primewave.com
+                        {user ? user.email : "user@primewave.com"}
                       </p>
                     </div>
                   </div>
                   <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Active Verified Session</span>
+                    <span>{isAdmin ? "Admin Verified Session" : "Active Member Session"}</span>
                   </div>
                 </div>
 
                 {/* Nav Links */}
                 <div className="space-y-0.5">
-                  <Link
-                    href="/users"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors"
-                  >
-                    <Users className="w-4 h-4 text-indigo-600" />
-                    <span>Team & Users</span>
-                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href="/users"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+                    >
+                      <Users className="w-4 h-4 text-indigo-600" />
+                      <span>Team & Users</span>
+                    </Link>
+                  )}
 
                   <Link
                     href="/settings"

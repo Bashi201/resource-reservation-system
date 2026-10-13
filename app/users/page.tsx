@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Reservation } from "@prisma/client";
 import {
   Users,
@@ -17,90 +18,27 @@ import {
   Loader2,
   Edit,
   ShieldOff,
+  ArrowLeft,
+  KeyRound,
+  Upload,
+  Trash2,
+  Camera,
 } from "lucide-react";
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  department: string;
-  role: "Administrator" | "Facility Lead" | "Team Member";
-  status: "ACTIVE" | "INACTIVE";
-  joinedDate: string;
-}
-
-const INITIAL_TEAM: TeamMember[] = [
-  {
-    id: "usr-1",
-    name: "Bhashitha W.",
-    email: "bhashitha@primewave.com",
-    department: "Engineering",
-    role: "Administrator",
-    status: "ACTIVE",
-    joinedDate: "Jan 15, 2026",
-  },
-  {
-    id: "usr-2",
-    name: "Samantha Wright",
-    email: "samantha@primewave.com",
-    department: "Executive",
-    role: "Facility Lead",
-    status: "ACTIVE",
-    joinedDate: "Feb 01, 2026",
-  },
-  {
-    id: "usr-3",
-    name: "Natasha Roman",
-    email: "natasha.r@primewave.com",
-    department: "Engineering",
-    role: "Team Member",
-    status: "ACTIVE",
-    joinedDate: "Feb 10, 2026",
-  },
-  {
-    id: "usr-4",
-    name: "David Miller",
-    email: "david.m@primewave.com",
-    department: "Product & Design",
-    role: "Team Member",
-    status: "ACTIVE",
-    joinedDate: "Feb 18, 2026",
-  },
-  {
-    id: "usr-5",
-    name: "Elena Rostova",
-    email: "elena.r@primewave.com",
-    department: "Operations",
-    role: "Facility Lead",
-    status: "ACTIVE",
-    joinedDate: "Mar 05, 2026",
-  },
-  {
-    id: "usr-6",
-    name: "Marcus Vance",
-    email: "marcus.v@primewave.com",
-    department: "Marketing",
-    role: "Team Member",
-    status: "ACTIVE",
-    joinedDate: "Mar 12, 2026",
-  },
-];
+import { useAuth, RegisteredAccount, UserRole } from "@/lib/auth-context";
 
 export default function UsersPage() {
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("pw_team_members");
-        if (saved) return JSON.parse(saved);
-      } catch {
-        // Ignore
-      }
-    }
-    return INITIAL_TEAM;
-  });
+  const {
+    isAdmin,
+    isLoading: authLoading,
+    accounts,
+    createAccount,
+    updateAccount,
+    deleteAccount,
+    toggleAccountStatus,
+  } = useAuth();
 
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingReservations, setLoadingReservations] = useState(true);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -109,14 +47,19 @@ export default function UsersPage() {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [editingAccount, setEditingAccount] = useState<RegisteredAccount | null>(null);
   const [formName, setFormName] = useState("");
   const [formEmail, setFormEmail] = useState("");
+  const [formUsername, setFormUsername] = useState("");
+  const [formPassword, setFormPassword] = useState("");
   const [formDept, setFormDept] = useState("Engineering");
-  const [formRole, setFormRole] = useState<TeamMember["role"]>("Team Member");
-  const [formStatus, setFormStatus] = useState<TeamMember["status"]>("ACTIVE");
+  const [formRole, setFormRole] = useState<RegisteredAccount["role"]>("Team Member");
+  const [formStatus, setFormStatus] = useState<RegisteredAccount["status"]>("ACTIVE");
+  const [formAvatarUrl, setFormAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [accountToDelete, setAccountToDelete] = useState<RegisteredAccount | null>(null);
 
   // Fetch reservations to calculate live booking count per user
   const fetchReservations = useCallback(async () => {
@@ -129,7 +72,7 @@ export default function UsersPage() {
     } catch (e) {
       console.error("Error loading reservations:", e);
     } finally {
-      setLoading(false);
+      setLoadingReservations(false);
     }
   }, []);
 
@@ -137,98 +80,156 @@ export default function UsersPage() {
     fetchReservations();
   }, [fetchReservations]);
 
-  const saveTeamState = (newTeam: TeamMember[]) => {
-    setTeamMembers(newTeam);
-    try {
-      localStorage.setItem("pw_team_members", JSON.stringify(newTeam));
-    } catch {
-      // Ignore
-    }
-  };
-
+  // Open Create Modal
   const openCreateModal = () => {
-    setEditingMember(null);
+    setEditingAccount(null);
     setFormName("");
     setFormEmail("");
+    setFormUsername("");
+    setFormPassword("password123");
     setFormDept("Engineering");
     setFormRole("Team Member");
     setFormStatus("ACTIVE");
+    setFormAvatarUrl(null);
     setFormError(null);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (member: TeamMember) => {
-    setEditingMember(member);
-    setFormName(member.name);
-    setFormEmail(member.email);
-    setFormDept(member.department);
-    setFormRole(member.role);
-    setFormStatus(member.status);
+  // Open Edit Modal
+  const openEditModal = (account: RegisteredAccount) => {
+    setEditingAccount(account);
+    setFormName(account.name);
+    setFormEmail(account.email);
+    setFormUsername(account.username);
+    setFormPassword(account.password || "password123");
+    setFormDept(account.department);
+    setFormRole(account.role);
+    setFormStatus(account.status);
+    setFormAvatarUrl(account.avatarUrl || null);
     setFormError(null);
     setIsModalOpen(true);
+  };
+
+  // Handle avatar upload via /api/upload
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    setFormError(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to upload avatar");
+      }
+
+      const data = await res.json();
+      setFormAvatarUrl(data.url);
+    } catch (err: unknown) {
+      console.error(err);
+      setFormError(err instanceof Error ? err.message : "Error uploading avatar");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  // Auto-suggest username when email is typed in create mode
+  const handleEmailChange = (val: string) => {
+    setFormEmail(val);
+    if (!editingAccount && !formUsername) {
+      const suggested = val.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
+      setFormUsername(suggested);
+    }
   };
 
   const handleSaveMember = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
-    if (!formName.trim() || !formEmail.trim()) {
-      setFormError("Full name and email are required.");
+    if (!formName.trim() || !formEmail.trim() || !formUsername.trim()) {
+      setFormError("Full name, email, and username are required.");
       return;
     }
 
-    if (editingMember) {
-      const updated = teamMembers.map((m) =>
-        m.id === editingMember.id
-          ? {
-              ...m,
-              name: formName.trim(),
-              email: formEmail.trim(),
-              department: formDept,
-              role: formRole,
-              status: formStatus,
-            }
-          : m
-      );
-      saveTeamState(updated);
-      setActionSuccess(`Team member "${formName.trim()}" updated successfully.`);
-    } else {
-      const newMember: TeamMember = {
-        id: `usr-${Date.now()}`,
-        name: formName.trim(),
-        email: formEmail.trim(),
-        department: formDept,
-        role: formRole,
-        status: formStatus,
-        joinedDate: "Today",
-      };
-      saveTeamState([newMember, ...teamMembers]);
-      setActionSuccess(`Team member "${formName.trim()}" onboarded successfully.`);
+    if (!formPassword.trim()) {
+      setFormError("A login password is required so the user can authenticate.");
+      return;
     }
 
-    setTimeout(() => setActionSuccess(null), 4000);
+    // Determine roleTier from role title
+    const roleTier: UserRole = formRole === "Administrator" ? "admin" : "user";
+
+    if (editingAccount) {
+      updateAccount(editingAccount.id, {
+        name: formName.trim(),
+        email: formEmail.trim().toLowerCase(),
+        username: formUsername.trim().toLowerCase(),
+        password: formPassword.trim(),
+        department: formDept,
+        role: formRole,
+        roleTier,
+        status: formStatus,
+        avatarUrl: formAvatarUrl,
+      });
+
+      setActionSuccess(`Account for "${formName.trim()}" updated successfully.`);
+    } else {
+      const result = createAccount({
+        name: formName.trim(),
+        email: formEmail.trim().toLowerCase(),
+        username: formUsername.trim().toLowerCase(),
+        password: formPassword.trim(),
+        department: formDept,
+        role: formRole,
+        roleTier,
+        status: formStatus,
+        avatarUrl: formAvatarUrl,
+      });
+
+      if (!result.success) {
+        setFormError(result.error || "Failed to create user account.");
+        return;
+      }
+
+      setActionSuccess(`New user "${formName.trim()}" created! They can now log in immediately with their credentials.`);
+    }
+
+    setTimeout(() => setActionSuccess(null), 5000);
     setIsModalOpen(false);
   };
 
-  const handleToggleStatus = (member: TeamMember) => {
-    const updated = teamMembers.map((m) =>
-      m.id === member.id
-        ? {
-            ...m,
-            status: (m.status === "ACTIVE" ? "INACTIVE" : "ACTIVE") as TeamMember["status"],
-          }
-        : m
-    );
-    saveTeamState(updated);
+  const handleToggleStatus = (account: RegisteredAccount) => {
+    toggleAccountStatus(account.id);
     setActionSuccess(
-      `Status for "${member.name}" set to ${
-        member.status === "ACTIVE" ? "INACTIVE" : "ACTIVE"
+      `Account for "${account.name}" marked as ${
+        account.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE"
       }.`
     );
     setTimeout(() => setActionSuccess(null), 3000);
   };
 
-  // Map reservations count to user by email
+  const handleDeleteUser = (account: RegisteredAccount) => {
+    setAccountToDelete(account);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!accountToDelete) return;
+    deleteAccount(accountToDelete.id);
+    setActionSuccess(`Account for "${accountToDelete.name}" was permanently removed.`);
+    setTimeout(() => setActionSuccess(null), 3500);
+    setAccountToDelete(null);
+  };
+
+  // Map active reservations count to user by email
   const bookingCountByEmail = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const r of reservations) {
@@ -240,22 +241,54 @@ export default function UsersPage() {
     return counts;
   }, [reservations]);
 
-  const filteredMembers = useMemo(() => {
-    return teamMembers.filter((m) => {
-      const matchesDept = selectedDept === "ALL" || m.department === selectedDept;
-      const matchesRole = selectedRole === "ALL" || m.role === selectedRole;
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter((acc) => {
+      const matchesDept = selectedDept === "ALL" || acc.department === selectedDept;
+      const matchesRole = selectedRole === "ALL" || acc.role === selectedRole;
       const q = searchQuery.toLowerCase();
       const matchesSearch =
-        m.name.toLowerCase().includes(q) ||
-        m.email.toLowerCase().includes(q) ||
-        m.department.toLowerCase().includes(q);
+        acc.name.toLowerCase().includes(q) ||
+        acc.email.toLowerCase().includes(q) ||
+        acc.username.toLowerCase().includes(q) ||
+        acc.department.toLowerCase().includes(q);
 
       return matchesDept && matchesRole && matchesSearch;
     });
-  }, [teamMembers, selectedDept, selectedRole, searchQuery]);
+  }, [accounts, selectedDept, selectedRole, searchQuery]);
 
-  const activeMembersCount = teamMembers.filter((m) => m.status === "ACTIVE").length;
-  const departmentsList = Array.from(new Set(teamMembers.map((m) => m.department)));
+  const activeAccountsCount = accounts.filter((a) => a.status === "ACTIVE").length;
+  const departmentsList = Array.from(new Set(accounts.map((a) => a.department)));
+
+  if (!authLoading && !isAdmin) {
+    return (
+      <div className="min-h-[65vh] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-xl text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto shadow-xs">
+            <ShieldOff className="w-8 h-8" />
+          </div>
+          <div>
+            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+              Administrator Access Required
+            </h2>
+            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+              The Team &amp; Access Directory is restricted to system administrators. Standard accounts do not have permission to view or manage organizational user accounts.
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 text-left space-y-1">
+            <span className="font-bold text-slate-800 block">Required Authorization:</span>
+            <span>Switch to an account with <strong className="text-indigo-600">Administrator</strong> privileges to access personnel directories and permissions.</span>
+          </div>
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl font-bold text-xs bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Return to Dashboard</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -264,10 +297,10 @@ export default function UsersPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-2.5">
             <Users className="w-7 h-7 text-indigo-600" />
-            <span>Team & Access Directory</span>
+            <span>Team &amp; Access Directory</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Manage company personnel, authorization tiers, and facility booking privileges.
+            Manage company personnel, create active accounts, assign roles, and govern booking privileges.
           </p>
         </div>
 
@@ -292,7 +325,7 @@ export default function UsersPage() {
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Total Team Members
+              Total Team Accounts
             </span>
             <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
               <Users className="w-5 h-5" />
@@ -300,10 +333,10 @@ export default function UsersPage() {
           </div>
           <div className="mt-3">
             <span className="text-3xl font-extrabold text-slate-900">
-              {teamMembers.length}
+              {accounts.length}
             </span>
             <span className="text-xs text-slate-500 block mt-1">
-              {activeMembersCount} active accounts authorized
+              {activeAccountsCount} active accounts authorized to book
             </span>
           </div>
         </div>
@@ -322,7 +355,7 @@ export default function UsersPage() {
               {Object.keys(bookingCountByEmail).length}
             </span>
             <span className="text-xs text-slate-500 block mt-1">
-              Have active confirmed reservations
+              Have confirmed active reservations
             </span>
           </div>
         </div>
@@ -330,7 +363,7 @@ export default function UsersPage() {
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Departments
+              Departments Represented
             </span>
             <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
               <Building2 className="w-5 h-5" />
@@ -341,7 +374,7 @@ export default function UsersPage() {
               {departmentsList.length}
             </span>
             <span className="text-xs text-slate-500 block mt-1">
-              Engineering, Design, Exec, Ops & Marketing
+              Engineering, Design, Exec, Ops &amp; Marketing
             </span>
           </div>
         </div>
@@ -387,7 +420,7 @@ export default function UsersPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, email..."
+              placeholder="Search by name, email, username..."
               className="w-full rounded-xl pl-10 pr-9 py-2 text-xs text-slate-800 bg-slate-50 hover:bg-white border border-slate-200 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 shadow-2xs transition-all"
             />
             {searchQuery && (
@@ -403,17 +436,12 @@ export default function UsersPage() {
       </div>
 
       {/* Team Table / Directory List */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
-          <p className="text-xs font-medium text-slate-500">Loading directory...</p>
-        </div>
-      ) : filteredMembers.length === 0 ? (
+      {filteredAccounts.length === 0 ? (
         <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-xs">
           <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <h3 className="text-base font-bold text-slate-900">No members found</h3>
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-            No team members matched your current filter criteria.
+            No accounts matched your current filter criteria.
           </p>
         </div>
       ) : (
@@ -431,9 +459,9 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {filteredMembers.map((member) => {
-                  const activeBookings = bookingCountByEmail[member.email.toLowerCase()] || 0;
-                  const initials = member.name
+                {filteredAccounts.map((account) => {
+                  const activeBookings = bookingCountByEmail[account.email.toLowerCase()] || 0;
+                  const initials = account.name
                     .split(" ")
                     .map((n) => n[0])
                     .join("")
@@ -442,20 +470,37 @@ export default function UsersPage() {
 
                   return (
                     <tr
-                      key={member.id}
+                      key={account.id}
                       className="hover:bg-slate-50/70 transition-colors group"
                     >
                       <td className="py-4 px-4 sm:px-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                            {initials}
-                          </div>
+                          {account.avatarUrl ? (
+                            <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-slate-200 shadow-2xs relative">
+                              <Image
+                                src={account.avatarUrl}
+                                alt={account.name}
+                                fill
+                                sizes="40px"
+                                className="object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                              {initials}
+                            </div>
+                          )}
                           <div>
-                            <span className="block font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                              {member.name}
-                            </span>
-                            <span className="block text-[11px] text-slate-400">
-                              {member.email}
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                                {account.name}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                (@{account.username})
+                              </span>
+                            </div>
+                            <span className="block text-[11px] text-slate-500">
+                              {account.email}
                             </span>
                           </div>
                         </div>
@@ -464,22 +509,22 @@ export default function UsersPage() {
                       <td className="py-4 px-4">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200/80">
                           <Building2 className="w-3 h-3 text-slate-500" />
-                          <span>{member.department}</span>
+                          <span>{account.department}</span>
                         </span>
                       </td>
 
                       <td className="py-4 px-4">
                         <span
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                            member.role === "Administrator"
+                            account.role === "Administrator"
                               ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                              : member.role === "Facility Lead"
+                              : account.role === "Facility Lead"
                               ? "bg-purple-50 text-purple-700 border border-purple-200"
                               : "bg-slate-50 text-slate-600 border border-slate-200"
                           }`}
                         >
                           <ShieldCheck className="w-3.5 h-3.5" />
-                          <span>{member.role}</span>
+                          <span>{account.role}</span>
                         </span>
                       </td>
 
@@ -498,14 +543,14 @@ export default function UsersPage() {
                       </td>
 
                       <td className="py-4 px-4">
-                        {member.status === "ACTIVE" ? (
+                        {account.status === "ACTIVE" ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                             Active
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
-                            Inactive
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                            Suspended
                           </span>
                         )}
                       </td>
@@ -513,26 +558,37 @@ export default function UsersPage() {
                       <td className="py-4 px-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => openEditModal(member)}
+                            onClick={() => openEditModal(account)}
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-colors cursor-pointer text-xs"
+                            title="Edit Account Details"
                           >
                             <Edit className="w-3.5 h-3.5" />
                             <span>Edit</span>
                           </button>
+
                           <button
-                            onClick={() => handleToggleStatus(member)}
+                            onClick={() => handleToggleStatus(account)}
                             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                              member.status === "ACTIVE"
+                              account.status === "ACTIVE"
                                 ? "bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200"
                                 : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200"
                             }`}
+                            title={account.status === "ACTIVE" ? "Suspend Account" : "Activate Account"}
                           >
-                            {member.status === "ACTIVE" ? (
+                            {account.status === "ACTIVE" ? (
                               <ShieldOff className="w-3.5 h-3.5" />
                             ) : (
                               <ShieldCheck className="w-3.5 h-3.5" />
                             )}
-                            <span>{member.status === "ACTIVE" ? "Suspend" : "Activate"}</span>
+                            <span>{account.status === "ACTIVE" ? "Suspend" : "Activate"}</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteUser(account)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="Delete Account"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -548,51 +604,146 @@ export default function UsersPage() {
       {/* Create / Edit Modal Dialog */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-2xl p-6 sm:p-8 border border-slate-200 relative shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-lg rounded-2xl p-6 sm:p-8 border border-slate-200 relative shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute right-4 top-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              className="absolute right-4 top-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
             <h2 className="text-xl font-bold text-slate-900 mb-1">
-              {editingMember ? "Edit Team Member" : "Onboard New Team Member"}
+              {editingAccount ? "Edit Team Member Account" : "Onboard New Team Member"}
             </h2>
             <p className="text-xs text-slate-500 mb-6">
-              Configure personnel authorization and facility booking access.
+              Configure login credentials, role permissions, and profile details.
             </p>
 
             <form onSubmit={handleSaveMember} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="e.g. Elena Rostova"
-                  className="w-full rounded-xl px-3.5 py-2.5 text-xs text-slate-800 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
-                />
+              {/* Profile Photo Uploader */}
+              <div className="flex items-center gap-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-slate-200 bg-white shrink-0 shadow-2xs flex items-center justify-center">
+                  {formAvatarUrl ? (
+                    <Image
+                      src={formAvatarUrl}
+                      alt="Avatar preview"
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
+                      {formName ? formName.charAt(0).toUpperCase() : <Camera className="w-6 h-6 text-slate-400" />}
+                    </div>
+                  )}
+
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <label className="block text-xs font-bold text-slate-800">
+                    Profile Picture / Avatar
+                  </label>
+                  <span className="text-[11px] text-slate-400 block mb-2">
+                    JPG, PNG, or WebP up to 5MB
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer shadow-2xs transition-colors">
+                      <Upload className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>{formAvatarUrl ? "Change Photo" : "Upload Photo"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarFileChange}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {formAvatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setFormAvatarUrl(null)}
+                        className="text-xs text-rose-600 hover:underline cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
-                  Work Email *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={formEmail}
-                  onChange={(e) => setFormEmail(e.target.value)}
-                  placeholder="elena.r@primewave.com"
-                  className="w-full rounded-xl px-3.5 py-2.5 text-xs text-slate-800 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
-                />
+              {/* Full Name & Work Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="e.g. Dr. Julian Croft"
+                    className="w-full rounded-xl px-3.5 py-2.5 text-xs text-slate-800 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Work Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formEmail}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    placeholder="julian.c@primewave.com"
+                    className="w-full rounded-xl px-3.5 py-2.5 text-xs text-slate-800 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
+                  />
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Username & Login Password */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Login Username *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formUsername}
+                    onChange={(e) => setFormUsername(e.target.value)}
+                    placeholder="e.g. julian"
+                    className="w-full rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Account Password *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      value={formPassword}
+                      onChange={(e) => setFormPassword(e.target.value)}
+                      placeholder="e.g. password123"
+                      className="w-full rounded-xl pl-3.5 pr-8 py-2.5 text-xs font-mono text-slate-800 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
+                    />
+                    <KeyRound className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Department & Role Tier */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                     Department *
@@ -600,7 +751,7 @@ export default function UsersPage() {
                   <select
                     value={formDept}
                     onChange={(e) => setFormDept(e.target.value)}
-                    className="w-full rounded-xl px-3 py-2 text-xs text-slate-800 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:outline-none"
+                    className="w-full rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:outline-none"
                   >
                     <option value="Engineering">Engineering</option>
                     <option value="Executive">Executive</option>
@@ -616,27 +767,28 @@ export default function UsersPage() {
                   </label>
                   <select
                     value={formRole}
-                    onChange={(e) => setFormRole(e.target.value as TeamMember["role"])}
-                    className="w-full rounded-xl px-3 py-2 text-xs text-slate-800 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:outline-none"
+                    onChange={(e) => setFormRole(e.target.value as RegisteredAccount["role"])}
+                    className="w-full rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:outline-none"
                   >
-                    <option value="Administrator">Administrator</option>
-                    <option value="Facility Lead">Facility Lead</option>
-                    <option value="Team Member">Team Member</option>
+                    <option value="Administrator">Administrator (Full Admin Access)</option>
+                    <option value="Facility Lead">Facility Lead (Privileged Booking)</option>
+                    <option value="Team Member">Team Member (Standard Booking)</option>
                   </select>
                 </div>
               </div>
 
+              {/* Account Status */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                   Account Status *
                 </label>
                 <select
                   value={formStatus}
-                  onChange={(e) => setFormStatus(e.target.value as TeamMember["status"])}
-                  className="w-full rounded-xl px-3 py-2 text-xs text-slate-800 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:outline-none"
+                  onChange={(e) => setFormStatus(e.target.value as RegisteredAccount["status"])}
+                  className="w-full rounded-xl px-3 py-2.5 text-xs text-slate-800 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 focus:outline-none"
                 >
-                  <option value="ACTIVE">Active (Can Book Slots)</option>
-                  <option value="INACTIVE">Suspended (Read Only)</option>
+                  <option value="ACTIVE">Active (Allowed to sign in & book)</option>
+                  <option value="INACTIVE">Suspended (Login blocked)</option>
                 </select>
               </div>
 
@@ -651,18 +803,73 @@ export default function UsersPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs hover:shadow-md hover:shadow-indigo-600/20 transition-all cursor-pointer"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs hover:shadow-md hover:shadow-indigo-600/20 transition-all cursor-pointer"
                 >
-                  <span>{editingMember ? "Save Changes" : "Create Member"}</span>
+                  <span>{editingAccount ? "Save Changes" : "Create Account"}</span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Enterprise Delete Confirmation Modal */}
+      {accountToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-2xl relative animate-in zoom-in-95 duration-200 space-y-4">
+            <button
+              onClick={() => setAccountToDelete(null)}
+              className="absolute right-4 top-4 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <div>
+              <h3 className="text-lg font-extrabold text-slate-900">
+                Delete Team Account
+              </h3>
+              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                Are you sure you want to permanently delete the account for{" "}
+                <strong className="text-slate-900 font-bold">
+                  {accountToDelete.name}
+                </strong>{" "}
+                <span className="font-mono text-slate-500">
+                  (@{accountToDelete.username})
+                </span>
+                ?
+              </p>
+            </div>
+
+            <div className="p-3.5 bg-rose-50 border border-rose-200/80 rounded-2xl text-[11px] text-rose-800 leading-relaxed">
+              This action is permanent and cannot be undone. Active login sessions for this account will be invalidated immediately.
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setAccountToDelete(null)}
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs hover:shadow-md hover:shadow-rose-600/20 transition-all cursor-pointer"
+              >
+                Delete Account
+              </button>
+            </div>
           </div>
         </div>
       )}

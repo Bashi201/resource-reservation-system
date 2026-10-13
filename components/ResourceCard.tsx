@@ -17,6 +17,7 @@ import {
   Maximize2,
   X,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 interface ResourceWithCount extends Resource {
   _count?: {
@@ -43,6 +44,7 @@ const TYPE_LABELS: Record<ResourceType, string> = {
 };
 
 export function ResourceCard({ resource, onEdit, onBook }: ResourceCardProps) {
+  const { isAdmin } = useAuth();
   const [imageError, setImageError] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
@@ -153,7 +155,7 @@ export function ResourceCard({ resource, onEdit, onBook }: ResourceCardProps) {
 
             {/* Action Buttons */}
             <div className="flex items-center gap-1.5">
-              {onEdit && (
+              {isAdmin && onEdit && (
                 <button
                   type="button"
                   onClick={() => onEdit(resource)}

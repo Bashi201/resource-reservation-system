@@ -16,6 +16,7 @@ import {
   X,
   ShieldCheck,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -34,14 +35,15 @@ export function BookingModal({
   initialHour,
   onSuccess,
 }: BookingModalProps) {
+  const { user } = useAuth();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loadingResources, setLoadingResources] = useState(true);
 
   // Form states
   const [resourceId, setResourceId] = useState("");
   const [title, setTitle] = useState("");
-  const [bookerName, setBookerName] = useState("");
-  const [bookerEmail, setBookerEmail] = useState("");
+  const [bookerName, setBookerName] = useState(user?.name || "");
+  const [bookerEmail, setBookerEmail] = useState(user?.email || "");
   const [date, setDate] = useState("");
   const [startTimeStr, setStartTimeStr] = useState("10:00");
   const [endTimeStr, setEndTimeStr] = useState("11:00");
@@ -99,8 +101,13 @@ export function BookingModal({
       setFormSuccess(null);
       setConflictWarning(null);
       setIsSlotValid(null);
+
+      if (user) {
+        setBookerName(user.name);
+        setBookerEmail(user.email);
+      }
     }
-  }, [isOpen, initialResourceId, initialDate, initialHour, resources, resourceId]);
+  }, [isOpen, initialResourceId, initialDate, initialHour, resources, resourceId, user]);
 
   // Debounced real-time conflict checking
   useEffect(() => {

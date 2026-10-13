@@ -15,6 +15,7 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 interface BookingFormProps {
   resources: Resource[];
@@ -32,6 +33,7 @@ export function BookingForm({
   onSuccess,
 }: BookingFormProps) {
   const router = useRouter();
+  const { user } = useAuth();
 
   // Filter only AVAILABLE resources for booking
   const availableResources = resources.filter(
@@ -56,8 +58,8 @@ export function BookingForm({
   const [resourceId, setResourceId] = useState(
     initialResourceId || (availableResources[0]?.id ?? "")
   );
-  const [bookerName, setBookerName] = useState("");
-  const [bookerEmail, setBookerEmail] = useState("");
+  const [bookerName, setBookerName] = useState(user?.name || "");
+  const [bookerEmail, setBookerEmail] = useState(user?.email || "");
   const [title, setTitle] = useState("");
   const [startTimeStr, setStartTimeStr] = useState(
     `${String(startH).padStart(2, "0")}:${startM}`

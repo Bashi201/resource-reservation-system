@@ -3,7 +3,13 @@
 import React from "react";
 import { format, isSameDay, parseISO } from "date-fns";
 import { Resource, Reservation } from "@prisma/client";
-import { Clock, Calendar as CalendarIcon, Info } from "lucide-react";
+import {
+  Clock,
+  Calendar as CalendarIcon,
+  Info,
+  ShieldCheck,
+  Plus,
+} from "lucide-react";
 
 interface ReservationWithResource extends Reservation {
   resource: Resource;
@@ -24,7 +30,7 @@ export function ReservationTimeline({
   onDateChange,
   onSlotClick,
 }: ReservationTimelineProps) {
-  // Working hours to display (e.g., 08:00 to 20:00)
+  // Working hours to display (08:00 to 20:00)
   const startHour = 8;
   const endHour = 20;
   const totalHours = endHour - startHour;
@@ -38,15 +44,15 @@ export function ReservationTimeline({
   );
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
-      {/* Timeline Controls Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      {/* Controls Header */}
+      <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
             <Clock className="w-5 h-5 text-indigo-600" />
-            Interactive Daily Schedule
+            <span>Interactive Daily Schedule</span>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 mt-0.5">
             Real-time visual schedule. Click any open slot to reserve immediately.
           </p>
         </div>
@@ -63,86 +69,87 @@ export function ReservationTimeline({
                   onDateChange(parseISO(e.target.value));
                 }
               }}
-              className="pl-9 pr-3 py-1.5 rounded-xl text-xs font-medium bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition-all shadow-2xs"
+              className="pl-9 pr-3 py-1.5 rounded-xl text-xs font-medium bg-slate-50 hover:bg-white border border-slate-200 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 text-slate-700 focus:outline-none transition-all shadow-2xs cursor-pointer"
             />
           </div>
           <button
             onClick={() => onDateChange(new Date())}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors shadow-2xs"
+            className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 transition-colors cursor-pointer"
           >
             Today
           </button>
         </div>
       </div>
 
-      {/* Timeline Grid Container */}
-      <div className="mt-6 overflow-x-auto">
-        <div className="min-w-[820px]">
-          {/* Header Time Markers */}
-          <div className="grid grid-cols-[220px_1fr] border-b border-slate-100 pb-2 mb-2">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-400 pl-2">
+      {/* Grid Container */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[960px]">
+          {/* Table Header matching system theme */}
+          <div className="grid grid-cols-[220px_1fr] bg-slate-50/90 border-b border-slate-200 text-slate-600">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3 flex items-center border-r border-slate-200">
               Facility / Asset
             </div>
             <div className="grid grid-cols-12 text-center">
-              {hoursArray.slice(0, 12).map((h) => (
-                <div key={h} className="text-[11px] font-semibold text-slate-500">
+              {hoursArray.slice(0, 12).map((h, idx) => (
+                <div
+                  key={h}
+                  className={`text-[11px] font-semibold text-slate-600 py-3 border-r border-slate-200/70 ${
+                    idx % 2 === 1 ? "bg-slate-100/40" : "bg-transparent"
+                  }`}
+                >
                   {h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Resources Rows */}
-          <div className="space-y-2.5">
+          {/* Unified Rows */}
+          <div className="divide-y divide-slate-100">
             {resources.map((resource) => {
               const resList = dayReservations.filter((r) => r.resourceId === resource.id);
 
               return (
                 <div
                   key={resource.id}
-                  className="grid grid-cols-[220px_1fr] items-center py-2 px-2 rounded-xl bg-slate-50/60 hover:bg-slate-50 border border-slate-100 transition-colors group"
+                  className="grid grid-cols-[220px_1fr] hover:bg-slate-50/40 transition-colors group"
                 >
-                  {/* Resource Info column */}
-                  <div className="pr-4">
-                    <p className="text-xs sm:text-sm font-semibold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">
+                  {/* Resource Column */}
+                  <div className="px-4 py-3 min-w-0 border-r border-slate-200 flex flex-col justify-center bg-white group-hover:bg-slate-50/40 transition-colors">
+                    <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">
                       {resource.name}
                     </p>
-                    <span className="text-[11px] text-slate-500">
-                      Cap: {resource.capacity} • {resource.type}
-                    </span>
+                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                      {resource.type} • Cap: {resource.capacity}
+                    </p>
                   </div>
 
-                  {/* 12-hour bar track */}
-                  <div className="relative h-10 bg-slate-100/90 rounded-lg border border-slate-200 overflow-hidden flex items-center">
-                    {/* Hour grid lines */}
-                    <div className="absolute inset-0 grid grid-cols-12 pointer-events-none">
-                      {Array.from({ length: 12 }).map((_, idx) => (
-                        <div
-                          key={idx}
-                          className="border-r border-slate-200 h-full"
-                        />
-                      ))}
-                    </div>
-
-                    {/* Empty click triggers */}
+                  {/* 12-Hour Timeline Track Column */}
+                  <div className="relative h-13 min-h-[52px]">
+                    {/* Grid Column Slot Buttons with subtle alternating shading */}
                     <div className="absolute inset-0 grid grid-cols-12">
                       {Array.from({ length: 12 }).map((_, idx) => (
                         <button
                           key={idx}
+                          type="button"
                           onClick={() => onSlotClick && onSlotClick(resource.id, startHour + idx)}
-                          className="h-full hover:bg-indigo-100/70 transition-colors cursor-pointer"
+                          className={`h-full border-r border-slate-200/70 hover:bg-indigo-50/60 transition-colors cursor-pointer flex items-center justify-center group/slot relative ${
+                            idx % 2 === 1 ? "bg-slate-50/50" : "bg-transparent"
+                          }`}
                           title={`Click to reserve ${resource.name} at ${startHour + idx}:00`}
-                        />
+                        >
+                          <div className="opacity-0 group-hover/slot:opacity-100 transition-all scale-75 group-hover/slot:scale-100 duration-150 flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white shadow-xs pointer-events-none">
+                            <Plus className="w-3 h-3 stroke-[2.5]" />
+                          </div>
+                        </button>
                       ))}
                     </div>
 
-                    {/* Booked blocks */}
+                    {/* Booked Reservation Blocks */}
                     {resList.map((res) => {
                       const start = new Date(res.startTime);
                       const end = new Date(res.endTime);
 
-                      const startDecimal =
-                        start.getHours() + start.getMinutes() / 60;
+                      const startDecimal = start.getHours() + start.getMinutes() / 60;
                       const endDecimal = end.getHours() + end.getMinutes() / 60;
 
                       // Clamp within startHour and endHour
@@ -159,16 +166,23 @@ export function ReservationTimeline({
                       return (
                         <div
                           key={res.id}
+                          onClick={(e) => e.stopPropagation()}
                           style={{
-                            left: `${leftPercent}%`,
-                            width: `${Math.max(widthPercent, 2)}%`,
+                            left: `calc(${leftPercent}% + 2px)`,
+                            width: `calc(${Math.max(widthPercent, 1)}% - 4px)`,
                           }}
-                          className="absolute h-7 rounded-md bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-xs border border-indigo-800/20 flex items-center px-2 z-10 overflow-hidden cursor-pointer hover:brightness-105 transition-all"
+                          className="absolute top-2 bottom-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs border border-indigo-700/80 flex items-center px-2.5 gap-1.5 z-10 overflow-hidden cursor-pointer transition-colors"
                           title={`${res.title} (${res.bookerName})\n${format(start, "h:mm a")} - ${format(end, "h:mm a")}`}
                         >
-                          <span className="text-[11px] font-semibold text-white truncate drop-shadow-2xs">
+                          <ShieldCheck className="w-3.5 h-3.5 text-indigo-200 shrink-0" />
+                          <span className="text-xs font-semibold text-white truncate">
                             {res.title}
                           </span>
+                          {widthPercent >= 14 && (
+                            <span className="text-[10px] text-indigo-200 font-normal shrink-0 ml-auto hidden sm:inline">
+                              {format(start, "h:mm")}–{format(end, "h:mm a")}
+                            </span>
+                          )}
                         </div>
                       );
                     })}
@@ -180,21 +194,22 @@ export function ReservationTimeline({
         </div>
       </div>
 
-      {/* Legend & Help Footer */}
-      <div className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-3">
+      {/* Footer Legend matching system theme */}
+      <div className="px-5 py-3.5 bg-slate-50/70 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-3">
         <div className="flex items-center gap-5">
           <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded bg-indigo-600 border border-indigo-700"></span>
-            <span className="font-medium text-slate-700">Reserved (Confirmed)</span>
+            <span className="w-3 h-3 rounded bg-indigo-600 border border-indigo-700"></span>
+            <span className="text-slate-600 font-medium text-[11px]">Reserved (Confirmed)</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 rounded bg-slate-100 border border-slate-300"></span>
-            <span className="font-medium text-slate-700">Available (Click slot to book)</span>
+            <span className="w-3 h-3 rounded bg-slate-100 border border-slate-300"></span>
+            <span className="text-slate-600 font-medium text-[11px]">Available (Click slot to book)</span>
           </div>
         </div>
+
         <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
           <Info className="w-3.5 h-3.5 text-indigo-500" />
-          <span>Operating hours 8:00 AM – 8:00 PM. High-concurrency safe.</span>
+          <span>Operating hours 8:00 AM – 8:00 PM • Conflict-free reservation</span>
         </div>
       </div>
     </div>
