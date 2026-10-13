@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Reservation } from "@prisma/client";
+import { UsersSkeleton, Skeleton } from "@/components/skeletons";
 import {
   Users,
   Search,
@@ -29,6 +30,7 @@ import { useAuth, RegisteredAccount, UserRole } from "@/lib/auth-context";
 export default function UsersPage() {
   const {
     isAdmin,
+    isHydrated,
     isLoading: authLoading,
     accounts,
     createAccount,
@@ -259,8 +261,13 @@ export default function UsersPage() {
   const activeAccountsCount = accounts.filter((a) => a.status === "ACTIVE").length;
   const departmentsList = Array.from(new Set(accounts.map((a) => a.department)));
 
-  if (!authLoading && !isAdmin) {
+  if (!isHydrated || authLoading) {
+    return <UsersSkeleton />;
+  }
+
+  if (!isAdmin) {
     return (
+
       <div className="min-h-[65vh] flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-xl text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
           <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto shadow-xs">
@@ -436,7 +443,58 @@ export default function UsersPage() {
       </div>
 
       {/* Team Table / Directory List */}
-      {filteredAccounts.length === 0 ? (
+      {loadingReservations ? (
+        <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <th className="py-3.5 px-4 sm:px-6">Team Member</th>
+                  <th className="py-3.5 px-4">Department</th>
+                  <th className="py-3.5 px-4">Role Tier</th>
+                  <th className="py-3.5 px-4">Active Bookings</th>
+                  <th className="py-3.5 px-4">Account Status</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {[1, 2, 3, 4, 5].map((row) => (
+                  <tr key={row} className="hover:bg-slate-50/50">
+                    <td className="py-4 px-4 sm:px-6">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
+                        <div className="space-y-1">
+                          <Skeleton className="h-4 w-36 rounded-md" />
+                          <Skeleton className="h-3 w-48 rounded" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <Skeleton className="h-4 w-24 rounded-md" />
+                    </td>
+                    <td className="py-4 px-4">
+                      <Skeleton className="h-6 w-28 rounded-full" />
+                    </td>
+                    <td className="py-4 px-4">
+                      <Skeleton className="h-4 w-12 rounded-md" />
+                    </td>
+                    <td className="py-4 px-4">
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Skeleton className="h-8 w-16 rounded-lg" />
+                        <Skeleton className="h-8 w-16 rounded-lg" />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : filteredAccounts.length === 0 ? (
+
         <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-xs">
           <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <h3 className="text-base font-bold text-slate-900">No members found</h3>

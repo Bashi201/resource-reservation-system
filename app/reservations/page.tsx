@@ -5,6 +5,7 @@ import { Reservation, Resource, ReservationStatus } from "@prisma/client";
 import { format } from "date-fns";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BookingModal } from "@/components/BookingModal";
+import { Skeleton } from "@/components/skeletons";
 import {
   Calendar,
   Search,
@@ -288,11 +289,55 @@ export default function ReservationsPage() {
 
       {/* Table / Cards List */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
-          <p className="text-xs font-medium text-slate-500">Loading reservation schedule...</p>
+        <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <th className="py-3.5 px-4 sm:px-6">Status</th>
+                  <th className="py-3.5 px-4">Reservation Title</th>
+                  <th className="py-3.5 px-4">Facility / Resource</th>
+                  <th className="py-3.5 px-4">Date & Time</th>
+                  <th className="py-3.5 px-4">Booker Contact</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {[1, 2, 3, 4, 5, 6].map((row) => (
+                  <tr key={row} className="hover:bg-slate-50/50">
+                    <td className="py-4 px-4 sm:px-6">
+                      <Skeleton className="h-6 w-24 rounded-full" />
+                    </td>
+                    <td className="py-4 px-4 space-y-1">
+                      <Skeleton className="h-4 w-44 rounded-md" />
+                      <Skeleton className="h-3 w-28 rounded" />
+                    </td>
+                    <td className="py-4 px-4 space-y-1">
+                      <Skeleton className="h-4 w-36 rounded-md" />
+                      <Skeleton className="h-3 w-20 rounded" />
+                    </td>
+                    <td className="py-4 px-4 space-y-1">
+                      <Skeleton className="h-4 w-32 rounded-md" />
+                      <Skeleton className="h-3 w-24 rounded" />
+                    </td>
+                    <td className="py-4 px-4 space-y-1">
+                      <Skeleton className="h-4 w-32 rounded-md" />
+                      <Skeleton className="h-3 w-40 rounded" />
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Skeleton className="h-8 w-16 rounded-lg" />
+                        <Skeleton className="h-8 w-16 rounded-lg" />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : filteredReservations.length === 0 ? (
+
         <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-xs">
           <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <h3 className="text-base font-bold text-slate-900">No reservations found</h3>

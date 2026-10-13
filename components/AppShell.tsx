@@ -6,7 +6,9 @@ import { useAuth } from "@/lib/auth-context";
 import { useBranding } from "@/lib/branding-context";
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
+import { DeveloperSignature } from "./DeveloperSignature";
 import { Loader2 } from "lucide-react";
+
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -81,10 +83,11 @@ export function AppShell({ children }: AppShellProps) {
           isCollapsed ? "md:pl-20" : "md:pl-64"
         }`}
       >
-        <div className="w-full max-w-[1780px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>© 2026 {branding.companyName} • {branding.tagline}</p>
-          <div className="flex items-center gap-4 text-[11px] text-slate-400">
-            <span>Next.js 16 App Router</span>
+        <div className="w-full max-w-[1780px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-center md:text-left">© 2026 {branding.companyName} • {branding.tagline}</p>
+          <DeveloperSignature variant="footer" />
+          <div className="flex items-center gap-3 text-[11px] text-slate-400">
+            <span>Next.js 16</span>
             <span>•</span>
             <span>TypeScript</span>
             <span>•</span>
@@ -94,6 +97,7 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </div>
       </footer>
+
     </div>
   );
 }

@@ -4,7 +4,9 @@ import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Resource } from "@prisma/client";
 import { BookingForm } from "@/components/BookingForm";
+import { NewReservationSkeleton } from "@/components/skeletons";
 import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+
 import Link from "next/link";
 
 function BookingContent() {
@@ -39,13 +41,9 @@ function BookingContent() {
   }, [fetchResources]);
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-        <p className="text-xs font-medium text-slate-500">Loading booking configuration...</p>
-      </div>
-    );
+    return <NewReservationSkeleton />;
   }
+
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -95,15 +93,9 @@ function BookingContent() {
 
 export default function NewReservationPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
-          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-          <p className="text-xs font-medium text-slate-500">Preparing booking view...</p>
-        </div>
-      }
-    >
+    <Suspense fallback={<NewReservationSkeleton />}>
       <BookingContent />
     </Suspense>
   );
 }
+

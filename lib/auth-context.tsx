@@ -137,11 +137,13 @@ const AUTH_STORAGE_KEY = "pw_auth_user";
 const ACCOUNTS_STORAGE_KEY = "pw_team_members";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Accounts list state initialized statically for SSR safety
+  // Accounts list state initialized statically for SSR consistency
   const [accounts, setAccounts] = useState<RegisteredAccount[]>(INITIAL_REGISTERED_USERS);
 
-  // Current session user state initialized statically for SSR safety
+  // Current session user state initialized statically for SSR consistency
   const [user, setUser] = useState<AuthUser | null>(null);
+
+
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -182,6 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsHydrated(true);
     }
   }, []);
+
 
   const login = useCallback(
     async (usernameOrEmail: string, password: string): Promise<{ success: boolean; error?: string }> => {
@@ -477,9 +480,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!user,
     isAdmin: user?.role === "admin",
     isUser: user?.role === "user",
-    isLoading,
+    isLoading: !isHydrated || isLoading,
     accounts,
     isHydrated,
+
     login,
     loginAs,
     logout,

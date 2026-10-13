@@ -27,10 +27,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useBranding } from "@/lib/branding-context";
+import { SettingsSkeleton } from "@/components/skeletons";
+import { DeveloperSignature } from "@/components/DeveloperSignature";
 
 export default function SettingsPage() {
-  const { user, isAdmin, updateCurrentUser } = useAuth();
+  const { user, isAdmin, updateCurrentUser, isHydrated } = useAuth();
   const { branding, updateBranding, resetBranding } = useBranding();
+
 
   const [activeTab, setActiveTab] = useState<
     "PROFILE" | "BRANDING" | "SCHEDULE" | "GOVERNANCE" | "DIAGNOSTICS"
@@ -56,6 +59,8 @@ export default function SettingsPage() {
   }, [user]);
 
   // Company Branding form states (Admin only)
+
+
   const [companyName, setCompanyName] = useState(branding.companyName);
   const [brandTitle, setBrandTitle] = useState(branding.brandTitle);
   const [tagline, setTagline] = useState(branding.tagline);
@@ -314,7 +319,12 @@ export default function SettingsPage() {
     setSlotInterval(interval);
   };
 
+  if (!isHydrated) {
+    return <SettingsSkeleton />;
+  }
+
   return (
+
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1204,8 +1214,12 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+
+          {/* Lead Software Engineer & Architect Credits */}
+          <DeveloperSignature variant="card" />
         </div>
       )}
+
     </div>
   );
 }

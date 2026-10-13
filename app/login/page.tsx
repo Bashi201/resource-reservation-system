@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useBranding } from "@/lib/branding-context";
+import { DeveloperSignature } from "@/components/DeveloperSignature";
+
 import {
   User as UserIcon,
   Lock,
@@ -530,10 +532,12 @@ export default function LoginPage() {
       {/* ========================================================
           PRODUCTION FOOTER
          ======================================================== */}
-      <footer className="relative z-10 w-full max-w-7xl mx-auto pt-4 sm:pt-6 border-t border-white/15 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-blue-100/80">
-        <p className="text-center sm:text-left text-[11px] sm:text-xs">
+      <footer className="relative z-10 w-full max-w-7xl mx-auto pt-4 sm:pt-6 border-t border-white/15 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-blue-100/80">
+        <p className="text-center md:text-left text-[11px] sm:text-xs">
           © 2026 {branding.companyName} • {branding.tagline}
         </p>
+
+        <DeveloperSignature variant="login" />
 
         <div className="flex items-center gap-4 text-[11px]">
           <span className="hover:text-white transition-colors cursor-pointer">
@@ -550,5 +554,6 @@ export default function LoginPage() {
         </div>
       </footer>
     </div>
+
   );
 }

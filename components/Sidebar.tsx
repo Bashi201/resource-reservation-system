@@ -19,6 +19,8 @@ import {
 import Image from "next/image";
 import { useAuth } from "@/lib/auth-context";
 import { useBranding } from "@/lib/branding-context";
+import { DeveloperSignature } from "./DeveloperSignature";
+
 
 interface SidebarProps {
   isMobileOpen: boolean;
@@ -199,7 +201,7 @@ export function Sidebar({
         {/* System Operator Badge */}
         {!isCollapsed ? (
           <div className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
-            {user?.avatarUrl ? (
+            {isHydrated && user?.avatarUrl ? (
               <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-slate-200">
                 <Image
                   src={user.avatarUrl}
@@ -211,24 +213,24 @@ export function Sidebar({
               </div>
             ) : (
               <div className={`w-8 h-8 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 ${
-                isAdmin ? "bg-indigo-100 text-indigo-700" : "bg-slate-200 text-slate-700"
+                isHydrated && isAdmin ? "bg-indigo-100 text-indigo-700" : "bg-slate-200 text-slate-700"
               }`}>
-                {user ? user.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() : "PW"}
+                {isHydrated && user ? user.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() : "PW"}
               </div>
             )}
             <div className="overflow-hidden">
               <p className="text-xs font-semibold text-slate-800 leading-tight truncate">
-                {user ? user.name : (isAdmin ? "Admin Console" : "User Portal")}
+                {isHydrated && user ? user.name : (isHydrated && isAdmin ? "Admin Console" : "PrimeWave Portal")}
               </p>
               <div className="flex items-center gap-1 mt-0.5 text-[10px] text-slate-500">
                 <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                <span className="truncate">{user?.roleTitle || (isAdmin ? "Administrator" : "Standard User")}</span>
+                <span className="truncate">{isHydrated ? (user?.roleTitle || (isAdmin ? "Administrator" : "Standard User")) : "Resource Hub"}</span>
               </div>
             </div>
           </div>
         ) : (
-          <div className="flex justify-center" title={user?.name || (isAdmin ? "Admin Console" : "User Portal")}>
-            {user?.avatarUrl ? (
+          <div className="flex justify-center" title={isHydrated && user ? user.name : (isHydrated && isAdmin ? "Admin Console" : "PrimeWave Portal")}>
+            {isHydrated && user?.avatarUrl ? (
               <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-200">
                 <Image
                   src={user.avatarUrl}
@@ -240,13 +242,19 @@ export function Sidebar({
               </div>
             ) : (
               <div className={`w-8 h-8 rounded-lg font-bold text-xs flex items-center justify-center ${
-                isAdmin ? "bg-indigo-100 text-indigo-700" : "bg-slate-200 text-slate-700"
+                isHydrated && isAdmin ? "bg-indigo-100 text-indigo-700" : "bg-slate-200 text-slate-700"
               }`}>
-                {user ? user.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() : "PW"}
+                {isHydrated && user ? user.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() : "PW"}
               </div>
             )}
           </div>
         )}
+
+
+        {/* Developer Attribution Signature */}
+        <div className="pt-1">
+          <DeveloperSignature variant="sidebar" isCollapsed={isCollapsed} />
+        </div>
 
         {/* Desktop Collapse / Expand Button */}
         <button
@@ -264,6 +272,7 @@ export function Sidebar({
           )}
         </button>
       </div>
+
     </div>
   );
 

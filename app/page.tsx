@@ -8,6 +8,7 @@ import { ReservationTimeline } from "@/components/ReservationTimeline";
 import { ResourceCard } from "@/components/ResourceCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { BookingModal } from "@/components/BookingModal";
+import { DashboardSkeleton } from "@/components/skeletons";
 import {
   Layers,
   Calendar,
@@ -80,13 +81,9 @@ export default function DashboardPage() {
   const totalConfirmed = reservations.filter((r) => r.status === "CONFIRMED").length;
 
   if (loading || !selectedDate) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-        <p className="text-sm font-medium text-slate-500">Loading system overview...</p>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
+
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">

@@ -30,8 +30,9 @@ interface NavbarProps {
 
 export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
   const pathname = usePathname();
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isAdmin, logout, isHydrated } = useAuth();
   const { branding } = useBranding();
+
   const [currentDateTime, setCurrentDateTime] = useState<string>("");
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [logoutFeedback, setLogoutFeedback] = useState(false);
@@ -124,9 +125,10 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
   const breadcrumb = getBreadcrumbs();
   const Icon = breadcrumb.icon;
 
-  const userInitials = user
+  const userInitials = isHydrated && user
     ? user.name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()
-    : "BW";
+    : "PW";
+
 
   return (
     <header
@@ -191,7 +193,7 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
               aria-label="User Account Menu"
               aria-expanded={isUserMenuOpen}
             >
-              {user?.avatarUrl ? (
+              {isHydrated && user?.avatarUrl ? (
                 <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-200 shadow-xs shrink-0">
                   <Image
                     src={user.avatarUrl}
@@ -203,7 +205,7 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
                 </div>
               ) : (
                 <div className={`w-8 h-8 rounded-lg text-white font-bold text-xs flex items-center justify-center shadow-xs shrink-0 ${
-                  isAdmin
+                  isHydrated && isAdmin
                     ? "bg-gradient-to-tr from-indigo-600 to-blue-600"
                     : "bg-gradient-to-tr from-sky-600 to-teal-600"
                 }`}>
@@ -212,14 +214,15 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
               )}
               <div className="hidden lg:block text-left">
                 <span className="block text-xs font-bold text-slate-900 leading-tight">
-                  {user ? user.name : "Guest User"}
+                  {isHydrated && user ? user.name : "PrimeWave Portal"}
                 </span>
                 <span className={`block text-[10px] font-semibold ${
-                  isAdmin ? "text-indigo-600" : "text-teal-600"
+                  isHydrated && isAdmin ? "text-indigo-600" : "text-teal-600"
                 }`}>
-                  {user?.roleTitle || (isAdmin ? "Administrator" : "Team Member")}
+                  {isHydrated ? (user?.roleTitle || (isAdmin ? "Administrator" : "Team Member")) : "Resource Hub"}
                 </span>
               </div>
+
               <ChevronDown
                 className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform ${
                   isUserMenuOpen ? "rotate-180" : ""
@@ -233,7 +236,7 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
                 {/* Account Details Header */}
                 <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-100 mb-1.5">
                   <div className="flex items-center gap-2.5">
-                    {user?.avatarUrl ? (
+                    {isHydrated && user?.avatarUrl ? (
                       <div className="relative w-9 h-9 rounded-xl overflow-hidden border border-slate-200 shadow-2xs shrink-0">
                         <Image
                           src={user.avatarUrl}
@@ -245,13 +248,14 @@ export function Navbar({ onOpenMobileMenu, isCollapsed }: NavbarProps) {
                       </div>
                     ) : (
                       <div className={`w-9 h-9 rounded-xl text-white font-bold text-xs flex items-center justify-center shrink-0 ${
-                        isAdmin
+                        isHydrated && isAdmin
                           ? "bg-gradient-to-tr from-indigo-600 to-blue-600"
                           : "bg-gradient-to-tr from-sky-600 to-teal-600"
                       }`}>
                         {userInitials}
                       </div>
                     )}
+
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-slate-900 truncate">
                         {user ? user.name : "User"}

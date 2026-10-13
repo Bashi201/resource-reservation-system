@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { Resource, ResourceType, ResourceStatus } from "@prisma/client";
 import { ResourceCard } from "@/components/ResourceCard";
 import { BookingModal } from "@/components/BookingModal";
+import { ResourceCardSkeleton } from "@/components/skeletons";
 import {
   Layers,
   Search,
@@ -316,11 +317,13 @@ export default function ResourcesPage() {
 
       {/* Resources Catalog Grid (Modern Space-Efficient 2-Column Grid) */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
-          <p className="text-xs font-medium text-slate-500">Loading catalog...</p>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((n) => (
+            <ResourceCardSkeleton key={n} />
+          ))}
         </div>
       ) : filteredResources.length === 0 ? (
+
         <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-xs">
           <Layers className="w-12 h-12 text-slate-300 mx-auto mb-3" />
           <h3 className="text-base font-bold text-slate-900">No resources found</h3>

@@ -7,33 +7,35 @@
 
 ## 📌 1. Project Overview & Business Problem
 
-PrimeWave Lab operates high-demand shared resources across teams, including executive boardrooms, specialized AR/VR hardware rigs, 4K laser projectors, and corporate transport vehicles. 
+PrimeWave Lab operates high-demand shared resources across teams, including executive boardrooms, specialized AR/VR hardware rigs, 4K laser projectors, and corporate transport vehicles.
 
 Previously, coordination relied on ad-hoc spreadsheets and chat messages, resulting in:
-* **Double bookings and scheduling collisions** during peak project deadlines.
-* **Lack of visibility** into real-time facility availability across departments.
-* **Manual coordination overhead** and wasted meeting time.
+
+- **Double bookings and scheduling collisions** during peak project deadlines.
+- **Lack of visibility** into real-time facility availability across departments.
+- **Manual coordination overhead** and wasted meeting time.
 
 This project delivers a **production-grade, full-stack centralized reservation management system** featuring:
-* **Mathematical Overlap Detection Engine**: Eliminates partial, exact, and enclosed booking collisions.
-* **Atomic Concurrency Protection**: Database-level transactions guard against race conditions when simultaneous requests arrive.
-* **Interactive 24-Hour Schedule Timeline**: Real-time visual block view with one-click slot booking.
-* **Resource Catalog Management**: Comprehensive CRUD capabilities with operational status flags (`AVAILABLE`, `MAINTENANCE`, `INACTIVE`).
-* **Soft Cancellation with Auditability**: Slots are released immediately for other users while preserving an audit log.
+
+- **Mathematical Overlap Detection Engine**: Eliminates partial, exact, and enclosed booking collisions.
+- **Atomic Concurrency Protection**: Database-level transactions guard against race conditions when simultaneous requests arrive.
+- **Interactive 24-Hour Schedule Timeline**: Real-time visual block view with one-click slot booking.
+- **Resource Catalog Management**: Comprehensive CRUD capabilities with operational status flags (`AVAILABLE`, `MAINTENANCE`, `INACTIVE`).
+- **Soft Cancellation with Auditability**: Slots are released immediately for other users while preserving an audit log.
 
 ---
 
 ## 🏗️ 2. Architecture & Technology Stack
 
-| Layer | Technology | Rationale |
-| :--- | :--- | :--- |
-| **Framework** | **Next.js 16 (App Router)** | Server Components for instant initial rendering, Turbopack, and unified REST API Route Handlers. |
-| **Language** | **TypeScript 5.x** | Strict end-to-end type safety across database models, validation schemas, and frontend UI. |
-| **Database** | **PostgreSQL 18** | Relational integrity, ACID transaction guarantees, and robust indexing for timestamp range queries. |
-| **ORM** | **Prisma 6.4** | Declarative schema modeling, automatic migration versioning, and type-safe query generation. |
-| **Styling** | **Tailwind CSS + Glassmorphism** | Modern, responsive dark-mode UI with sleek glass panels, micro-animations, and accessible contrast. |
-| **Validation** | **Zod** | Runtime request payload validation with granular error feedback for client and server. |
-| **Icons & Dates** | **Lucide React & date-fns** | Modular vector iconography and timezone-safe date-time manipulations. |
+| Layer             | Technology                       | Rationale                                                                                           |
+| :---------------- | :------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| **Framework**     | **Next.js 16 (App Router)**      | Server Components for instant initial rendering, Turbopack, and unified REST API Route Handlers.    |
+| **Language**      | **TypeScript 5.x**               | Strict end-to-end type safety across database models, validation schemas, and frontend UI.          |
+| **Database**      | **PostgreSQL 18**                | Relational integrity, ACID transaction guarantees, and robust indexing for timestamp range queries. |
+| **ORM**           | **Prisma 6.4**                   | Declarative schema modeling, automatic migration versioning, and type-safe query generation.        |
+| **Styling**       | **Tailwind CSS + Glassmorphism** | Modern, responsive dark-mode UI with sleek glass panels, micro-animations, and accessible contrast. |
+| **Validation**    | **Zod**                          | Runtime request payload validation with granular error feedback for client and server.              |
+| **Icons & Dates** | **Lucide React & date-fns**      | Modular vector iconography and timezone-safe date-time manipulations.                               |
 
 ---
 
@@ -69,6 +71,7 @@ erDiagram
 ```
 
 ### Key Schema Decisions & Integrity Constraints
+
 1. **Foreign Key Integrity**: `reservations.resource_id -> resources.id` with `onDelete: Restrict`, prohibiting accidental deletion of resources with active upcoming reservations.
 2. **Compound Timestamp Index**: `@@index([resourceId, startTime, endTime])` ensures $O(\log n)$ performance during overlap queries even under heavy table volume.
 3. **Soft Cancellation Lifecycle**: Cancelled bookings update to `status = CANCELLED`. The conflict algorithm only evaluates `status = CONFIRMED`, immediately freeing the time slot while preserving historical usage metrics.
@@ -78,11 +81,13 @@ erDiagram
 ## ⚡ 4. Overlap Algorithm & Concurrency Prevention
 
 ### The Mathematical Conflict Formula
+
 Two time intervals $[S_{\text{new}}, E_{\text{new}})$ and $[S_{\text{exist}}, E_{\text{exist}})$ overlap **if and only if**:
 
 $$\text{Conflict} = (S_{\text{new}} < E_{\text{exist}}) \land (E_{\text{new}} > S_{\text{exist}})$$
 
 ### Validation & Edge Cases Handled
+
 1. **Exact Overlap**: $(S_{\text{new}} = S_{\text{exist}}) \land (E_{\text{new}} = E_{\text{exist}})$ $\rightarrow$ **REJECTED (409 Conflict)**
 2. **Partial Overlap (Start)**: New booking starts before and ends inside existing booking $\rightarrow$ **REJECTED (409 Conflict)**
 3. **Partial Overlap (End)**: New booking starts inside and ends after existing booking $\rightarrow$ **REJECTED (409 Conflict)**
@@ -93,7 +98,9 @@ $$\text{Conflict} = (S_{\text{new}} < E_{\text{exist}}) \land (E_{\text{new}} > 
 8. **Self-Exclusion on Edit**: When updating an existing reservation, its own ID is excluded from the collision query.
 
 ### Race Condition Mitigation
+
 All booking creations run inside an atomic database transaction (`prisma.$transaction`). Inside this transaction:
+
 1. The resource status is verified (`status === 'AVAILABLE'`).
 2. An atomic conflict check is executed.
 3. The reservation is committed only if zero conflicts exist.
@@ -103,49 +110,62 @@ All booking creations run inside an atomic database transaction (`prisma.$transa
 ## 🚀 5. Getting Started & Installation Guide
 
 ### Prerequisites
-* **Node.js**: v18.18+ or v20+ (tested on Node v24)
-* **PostgreSQL**: v14+ (local instance or cloud like Supabase / Neon)
-* **npm**: v9+
+
+- **Node.js**: v18.18+ or v20+ (tested on Node v24)
+- **PostgreSQL**: v14+ (local instance or cloud like Supabase / Neon)
+- **npm**: v9+
 
 ### Step-by-Step Setup
 
 #### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/Bashi201/primewave-resource-reservation.git
 cd primewave-resource-reservation
 ```
 
 #### 2. Install Dependencies
+
 ```bash
 npm install
 ```
 
 #### 3. Environment Variable Configuration
+
 Copy the template file to `.env`:
+
 ```bash
 cp .env.example .env
 ```
+
 Edit `.env` to match your local PostgreSQL credentials:
+
 ```env
 DATABASE_URL="postgresql://postgres:root@localhost:5432/resource_reservation_db?schema=public"
 ```
 
 #### 4. Run Database Migrations
+
 Initialize database tables and indexes:
+
 ```bash
 npx prisma migrate dev --name init
 ```
 
 #### 5. Seed Realistic Demo Data
+
 Populate boardrooms, VR rigs, laser projectors, vehicles, and initial reservations:
+
 ```bash
 npm run seed
 ```
 
 #### 6. Start the Development Server
+
 ```bash
 npm run dev
 ```
+
 Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ---
@@ -155,11 +175,15 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 The repository includes comprehensive automated test suites covering interval collision mathematics, back-to-back reservations, and full end-to-end API workflows.
 
 ### 1. Run Core Overlap Algorithm Unit Tests
+
 Verifies mathematical collision detection, partial overlaps, enclosing intervals, and consecutive slots:
+
 ```bash
 npm run test:overlap
 ```
+
 **Test Results:**
+
 ```
 🧪 Starting Overlap Algorithm Verification Tests...
   ✅ PASS: 1. Exact match overlap should be rejected as conflict
@@ -178,11 +202,15 @@ Total tests run: 10 | Passed: 10 | Failed: 0
 ```
 
 ### 2. Run End-to-End System API Matrix
+
 Ensures full API lifecycle compliance against a running server:
+
 ```bash
 npm run test:e2e
 ```
+
 **Test Results:**
+
 ```
 🚀 Starting Full End-to-End System & API Verification Matrix...
 --- 1. Resource Management Tests ---
@@ -210,8 +238,9 @@ Total Checks: 11 | Passed: 11 | Failed: 0
 ## 📡 7. REST API Documentation
 
 ### Resources (`/api/resources`)
-* `GET /api/resources`: Fetch all resources with optional query filters (`?type=ROOM&status=AVAILABLE&search=Boardroom`).
-* `POST /api/resources`: Create a new resource.
+
+- `GET /api/resources`: Fetch all resources with optional query filters (`?type=ROOM&status=AVAILABLE&search=Boardroom`).
+- `POST /api/resources`: Create a new resource.
   ```json
   {
     "name": "Design Thinking Lab",
@@ -221,13 +250,14 @@ Total Checks: 11 | Passed: 11 | Failed: 0
     "status": "AVAILABLE"
   }
   ```
-* `GET /api/resources/[id]`: Retrieve single resource details with upcoming reservations.
-* `PUT /api/resources/[id]`: Modify resource configuration.
-* `DELETE /api/resources/[id]`: Delete resource (fails with 409 if active bookings exist).
+- `GET /api/resources/[id]`: Retrieve single resource details with upcoming reservations.
+- `PUT /api/resources/[id]`: Modify resource configuration.
+- `DELETE /api/resources/[id]`: Delete resource (fails with 409 if active bookings exist).
 
 ### Reservations (`/api/reservations`)
-* `GET /api/reservations`: List reservations with filtering by `resourceId`, `status`, `date`, or `search`.
-* `POST /api/reservations`: Atomic reservation creation with transaction-level conflict checks.
+
+- `GET /api/reservations`: List reservations with filtering by `resourceId`, `status`, `date`, or `search`.
+- `POST /api/reservations`: Atomic reservation creation with transaction-level conflict checks.
   ```json
   {
     "resourceId": "cuid_here",
@@ -238,25 +268,36 @@ Total Checks: 11 | Passed: 11 | Failed: 0
     "endTime": "2026-10-15T11:30:00.000Z"
   }
   ```
-* `POST /api/reservations/check`: Pre-flight real-time availability check for instant UI feedback.
-* `PUT /api/reservations/[id]`: Update reservation with self-exclusion collision validation.
-* `DELETE /api/reservations/[id]`: Soft-cancel reservation, releasing slot immediately.
+- `POST /api/reservations/check`: Pre-flight real-time availability check for instant UI feedback.
+- `PUT /api/reservations/[id]`: Update reservation with self-exclusion collision validation.
+- `DELETE /api/reservations/[id]`: Soft-cancel reservation, releasing slot immediately.
 
 ---
 
 ## 📹 8. Video Demonstration & Feature Walkthrough
 
-> 🔗 **Watch the Video Demonstration:** [System Walkthrough Video Link](https://www.youtube.com/watch?v=DEMO_LINK_HERE) *(Replace with your recording link)*
+> 🔗 **Watch the Video Demonstration:** [System Walkthrough Video Link](https://www.youtube.com/watch?v=DEMO_LINK_HERE) _(Replace with your recording link)_
 
 ### Key Capabilities Demonstrated in the Video
-* **Operations Dashboard**: Real-time KPI statistics, asset availability indicators, and today's schedule feed.
-* **Interactive 24-Hour Schedule Timeline**: Dynamic visual block view of company facilities with one-click slot booking.
-* **Resource Catalog (CRUD)**: Filtering by categories (Meeting Rooms, Audio/Visual Gear, Fleet Vehicles) and asset registration.
-* **Live Conflict Prevention in Action**: Demonstration of interval collision detection rejecting overlapping bookings in real time with descriptive error messages.
-* **Soft Cancellation & Slot Release**: Instant slot liberation and historical audit retention.
-* **Engineering Architecture**: Database-level atomic transactions (`prisma.$transaction`) and automated test verification.
+
+- **Operations Dashboard**: Real-time KPI statistics, asset availability indicators, and today's schedule feed.
+- **Interactive 24-Hour Schedule Timeline**: Dynamic visual block view of company facilities with one-click slot booking.
+- **Resource Catalog (CRUD)**: Filtering by categories (Meeting Rooms, Audio/Visual Gear, Fleet Vehicles) and asset registration.
+- **Live Conflict Prevention in Action**: Demonstration of interval collision detection rejecting overlapping bookings in real time with descriptive error messages.
+- **Soft Cancellation & Slot Release**: Instant slot liberation and historical audit retention.
+- **Engineering Architecture**: Database-level atomic transactions (`prisma.$transaction`) and automated test verification.
 
 ---
 
 ## ⚖️ License
+
 Engineered for PrimeWave Lab (Pvt) Ltd. Distributed under the MIT License.
+
+---
+
+## 👨‍💻 Author & Developer
+
+- **Bhashitha Wanasinghe**
+- **GitHub Profile:** [https://github.com/Bashi201](https://github.com/Bashi201)
+- **Repository:** [PrimeWave Resource Reservation System](https://github.com/Bashi201/primewave-resource-reservation)
+- **Role:** Software Engineering Internship Technical Assessment
