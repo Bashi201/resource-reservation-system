@@ -17,6 +17,7 @@ export const resourceSchema = z.object({
     .min(1, "Capacity must be at least 1")
     .max(1000, "Capacity cannot exceed 1000"),
   status: z.nativeEnum(ResourceStatus).default(ResourceStatus.AVAILABLE),
+  imageUrl: z.string().trim().optional().nullable(),
 });
 
 export const updateResourceSchema = resourceSchema.partial();

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Resource, ResourceType, ResourceStatus } from "@prisma/client";
 import { ResourceCard } from "@/components/ResourceCard";
 import { BookingModal } from "@/components/BookingModal";
@@ -15,6 +15,9 @@ import {
   DoorOpen,
   Monitor,
   Car,
+  UploadCloud,
+  Trash2,
+  RotateCw,
 } from "lucide-react";
 
 export default function ResourcesPage() {
@@ -39,6 +42,13 @@ export default function ResourcesPage() {
   const [formCapacity, setFormCapacity] = useState<number>(6);
   const [formDescription, setFormDescription] = useState("");
   const [formStatus, setFormStatus] = useState<ResourceStatus>(ResourceStatus.AVAILABLE);
+  const [formImageUrl, setFormImageUrl] = useState("");
+
+  // Image upload state
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [saving, setSaving] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
@@ -69,6 +79,8 @@ export default function ResourcesPage() {
     setFormCapacity(6);
     setFormDescription("");
     setFormStatus(ResourceStatus.AVAILABLE);
+    setFormImageUrl("");
+    setImageUploadError(null);
     setModalError(null);
     setIsModalOpen(true);
   };
@@ -80,8 +92,68 @@ export default function ResourcesPage() {
     setFormCapacity(res.capacity);
     setFormDescription(res.description || "");
     setFormStatus(res.status);
+    setFormImageUrl(res.imageUrl || "");
+    setImageUploadError(null);
     setModalError(null);
     setIsModalOpen(true);
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setImageUploadError("Please upload a valid image file (PNG, JPG, WebP, GIF, SVG).");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setImageUploadError("Image size exceeds the 5MB limit.");
+      return;
+    }
+
+    setImageUploadError(null);
+    setUploadingImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setImageUploadError(data.error || "Failed to upload image.");
+        return;
+      }
+
+      setFormImageUrl(data.url);
+    } catch (err) {
+      console.error("Upload error:", err);
+      setImageUploadError("An error occurred while uploading. Please try again.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -95,6 +167,7 @@ export default function ResourcesPage() {
       capacity: Number(formCapacity),
       description: formDescription.trim(),
       status: formStatus,
+      imageUrl: formImageUrl.trim() || null,
     };
 
     try {
@@ -160,7 +233,7 @@ export default function ResourcesPage() {
             <span>Shared Resource Catalog</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Browse conference rooms, audio-visual equipment, and fleet vehicles.
+            Browse conference rooms, audio-visual equipment, and fleet vehicles with real-time status.
           </p>
         </div>
 
@@ -231,7 +304,7 @@ export default function ResourcesPage() {
         </div>
       </div>
 
-      {/* Resources Grid */}
+      {/* Resources Catalog Grid (Modern Space-Efficient 2-Column Grid) */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
@@ -246,7 +319,7 @@ export default function ResourcesPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {filteredResources.map((resource) => (
             <ResourceCard
               key={resource.id}
@@ -264,10 +337,10 @@ export default function ResourcesPage() {
       {/* Create / Edit Modal Dialog */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg rounded-2xl p-6 sm:p-8 border border-slate-200 relative shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-xl max-h-[92vh] overflow-y-auto rounded-3xl p-6 sm:p-8 border border-slate-200 relative shadow-2xl animate-in zoom-in-95 duration-200">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute right-4 top-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              className="absolute right-4 top-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -341,6 +414,115 @@ export default function ResourcesPage() {
                 </select>
               </div>
 
+              {/* Dedicated User Image Upload Section */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+                    Resource Photo
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    Optional (Max 5MB)
+                  </span>
+                </div>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleFileUpload(e.target.files[0]);
+                    }
+                  }}
+                />
+
+                {formImageUrl ? (
+                  /* Uploaded Image Preview & Controls */
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/90 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative w-16 h-14 rounded-xl overflow-hidden bg-slate-200 border border-slate-300/80 shrink-0">
+                        <img
+                          src={formImageUrl}
+                          alt="Resource"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-slate-800 truncate">
+                          Photo uploaded successfully
+                        </p>
+                        <p className="text-[11px] text-slate-500 truncate">
+                          {formImageUrl}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingImage}
+                        className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 border border-slate-200 transition-colors cursor-pointer"
+                        title="Replace photo"
+                      >
+                        <RotateCw className={`w-3.5 h-3.5 ${uploadingImage ? "animate-spin" : ""}`} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormImageUrl("")}
+                        disabled={uploadingImage}
+                        className="p-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer"
+                        title="Remove photo (revert to category placeholder)"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Dropzone for Uploading */
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all ${
+                      isDragging
+                        ? "border-indigo-500 bg-indigo-50/50"
+                        : "border-slate-200 hover:border-indigo-400 bg-slate-50/50 hover:bg-slate-50"
+                    }`}
+                  >
+                    {uploadingImage ? (
+                      <div className="flex flex-col items-center justify-center py-2 gap-2">
+                        <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+                        <span className="text-xs font-medium text-slate-600">
+                          Uploading image...
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-1.5">
+                        <div className="w-10 h-10 rounded-xl bg-white shadow-2xs border border-slate-200 flex items-center justify-center text-indigo-600 mb-0.5">
+                          <UploadCloud className="w-5 h-5" />
+                        </div>
+                        <p className="text-xs font-bold text-slate-800">
+                          Click to upload or drag & drop image
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Supports PNG, JPG, WebP up to 5MB. If skipped, category blueprint placeholder will be used.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {imageUploadError && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-rose-600">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{imageUploadError}</span>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
                   Description / Amenities
@@ -350,7 +532,7 @@ export default function ResourcesPage() {
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
                   placeholder="Key features, video conference tech, seating layout..."
-                  className="w-full rounded-xl px-3.5 py-2.5 text-xs text-slate-800 bg-slate-50 border border-slate-200 placeholder:text-slate-400 focus:bg-white focus:border-indigo-500 focus:outline-none resize-none"
+                  className="w-full rounded-xl px-3.5 py-2.5 text-xs text-slate-800 bg-slate-50 border border-slate-200 placeholder:text-slate-400 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all resize-none shadow-2xs"
                 />
               </div>
 
@@ -371,7 +553,7 @@ export default function ResourcesPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || uploadingImage}
                   className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-xs hover:shadow-md hover:shadow-indigo-600/20 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}

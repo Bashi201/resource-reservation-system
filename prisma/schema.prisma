@@ -31,6 +31,7 @@ model Resource {
   description String?
   capacity    Int            @default(1)
   status      ResourceStatus @default(AVAILABLE)
+  imageUrl    String?        @map("image_url")
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
 

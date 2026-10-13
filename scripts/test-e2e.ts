@@ -29,6 +29,7 @@ async function runE2ETests() {
       capacity: 18,
       description: "Equipped with 8K Smartboard and acoustic baffling.",
       status: "AVAILABLE",
+      imageUrl: null,
     }),
   });
 

@@ -16,6 +16,7 @@ async function main() {
       capacity: 20,
       description: "Flagship executive boardroom equipped with dual 85-inch 4K displays, Polycom conference bar, and motorized blinds.",
       status: ResourceStatus.AVAILABLE,
+      imageUrl: null,
     },
     {
       name: "Agile Huddle Room Beta",
@@ -23,6 +24,7 @@ async function main() {
       capacity: 6,
       description: "Comfortable glass-walled room designed for hybrid team standups and client video check-ins.",
       status: ResourceStatus.AVAILABLE,
+      imageUrl: null,
     },
     {
       name: "Creative Design Studio",
@@ -30,6 +32,7 @@ async function main() {
       capacity: 12,
       description: "Collaborative workshop space with floor-to-ceiling whiteboards, high-res color-calibrated monitors, and soundproofing.",
       status: ResourceStatus.AVAILABLE,
+      imageUrl: null,
     },
     {
       name: "4K Laser Projector Pro",
@@ -37,6 +40,7 @@ async function main() {
       capacity: 1,
       description: "5,000-lumen ultra-bright portable laser projector with wireless screen mirroring and HDR support.",
       status: ResourceStatus.AVAILABLE,
+      imageUrl: null,
     },
     {
       name: "AR/VR Spatial Dev Rig",
@@ -44,6 +48,7 @@ async function main() {
       capacity: 1,
       description: "High-spec workstation with dual RTX 4090 GPUs, Apple Vision Pro, and Meta Quest 3 test units.",
       status: ResourceStatus.AVAILABLE,
+      imageUrl: null,
     },
     {
       name: "Studio Podcast Microphone Kit",
@@ -51,6 +56,7 @@ async function main() {
       capacity: 2,
       description: "Shure SM7B broadcast mic package with Cloudlifter and Focusrite Scarlett audio interface.",
       status: ResourceStatus.MAINTENANCE,
+      imageUrl: null,
     },
     {
       name: "Executive Hybrid Van",
@@ -58,6 +64,7 @@ async function main() {
       capacity: 7,
       description: "Luxury 7-passenger VIP van for executive airport transfers, client meetings, and tech delegation transport.",
       status: ResourceStatus.AVAILABLE,
+      imageUrl: null,
     },
     {
       name: "Operations Logistics Shuttle",
@@ -65,6 +72,7 @@ async function main() {
       capacity: 3,
       description: "Spacious commercial utility van equipped with cargo tie-downs for hardware and server transport.",
       status: ResourceStatus.AVAILABLE,
+      imageUrl: null,
     },
   ];
 
