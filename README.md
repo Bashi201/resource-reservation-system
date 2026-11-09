@@ -1,8 +1,3 @@
-# PrimeWave Lab - Resource Reservation Management System
-
-> **PrimeWave Lab (Pvt) Ltd** • Centralized shared facility and resource allocation platform.  
-> **Tech Stack:** Next.js (App Router), TypeScript, PostgreSQL, Prisma ORM, Tailwind CSS
-
 ---
 
 ## 📌 1. Project Overview & Business Problem
@@ -298,4 +293,3 @@ Total Checks: 11 | Passed: 11 | Failed: 0
 - **Bhashitha Wanasinghe**
 - **GitHub Profile:** [https://github.com/Bashi201](https://github.com/Bashi201)
 - **Repository:** [PrimeWave Resource Reservation System](https://github.com/Bashi201/primewave-resource-reservation)
-- **Role:** Software Engineering Internship Technical Assessment
