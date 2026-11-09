@@ -1,5 +1,3 @@
----
-
 ## 📌 1. Project Overview & Business Problem
 
 PrimeWave Lab operates high-demand shared resources across teams, including executive boardrooms, specialized AR/VR hardware rigs, 4K laser projectors, and corporate transport vehicles.
