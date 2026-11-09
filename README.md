@@ -293,27 +293,6 @@ Total Checks: 11 | Passed: 11 | Failed: 0
 
 ---
 
-## 📹 8. Video Demonstration & Feature Walkthrough
-
-> 🔗 **Watch the Video Demonstration:** [System Walkthrough Video Link](https://www.youtube.com/watch?v=DEMO_LINK_HERE) _(Replace with your recording link)_
-
-### Key Capabilities Demonstrated in the Video
-
-- **Operations Dashboard**: Real-time KPI statistics, asset availability indicators, and today's schedule feed.
-- **Interactive 24-Hour Schedule Timeline**: Dynamic visual block view of company facilities with one-click slot booking.
-- **Resource Catalog (CRUD)**: Filtering by categories (Meeting Rooms, Audio/Visual Gear, Fleet Vehicles) and asset registration.
-- **Live Conflict Prevention in Action**: Demonstration of interval collision detection rejecting overlapping bookings in real time with descriptive error messages.
-- **Soft Cancellation & Slot Release**: Instant slot liberation and historical audit retention.
-- **Engineering Architecture**: Database-level atomic transactions (`prisma.$transaction`) and automated test verification.
-
----
-
-## ⚖️ License
-
-Engineered for PrimeWave Lab (Pvt) Ltd. Distributed under the MIT License.
-
----
-
 ## 👨‍💻 Author & Developer
 
 - **Bhashitha Wanasinghe**
